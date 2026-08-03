@@ -1,0 +1,31 @@
+{
+  "nav.dashboard": "Dashboard",
+  "nav.clients": "Clients",
+  "nav.invoices": "Invoices",
+  "nav.vault": "Finance Vault",
+  "nav.courses": "Courses",
+  "nav.reports": "Reports",
+  "nav.settings": "Settings",
+
+  "clients.title": "Clients Registry",
+  "clients.new": "New Client",
+  "clients.name": "Client Name",
+  "clients.phone": "Phone",
+  "clients.nationality": "Nationality",
+  "clients.type": "Type",
+  "clients.type.individual": "Individual",
+  "clients.type.company": "Company",
+  "clients.balanceDue": "Balance Due",
+  "clients.lastActivity": "Last Activity",
+  "clients.status": "Status",
+  "clients.status.paid": "Paid",
+  "clients.status.pending": "Pending",
+  "clients.status.overdue": "Overdue",
+
+  "actions.save": "Save",
+  "actions.cancel": "Cancel",
+  "actions.delete": "Delete",
+  "actions.edit": "Edit",
+  "actions.print": "Print",
+  "actions.export": "Export Excel"
+}
