@@ -1,0 +1,31 @@
+{
+  "nav.dashboard": "لوحة التحكم",
+  "nav.clients": "العملاء",
+  "nav.invoices": "الفواتير",
+  "nav.vault": "الخزينة",
+  "nav.courses": "الكورسات",
+  "nav.reports": "التقارير",
+  "nav.settings": "الإعدادات",
+
+  "clients.title": "سجل العملاء",
+  "clients.new": "عميل جديد",
+  "clients.name": "اسم العميل",
+  "clients.phone": "الجوال",
+  "clients.nationality": "الجنسية",
+  "clients.type": "النوع",
+  "clients.type.individual": "فرد",
+  "clients.type.company": "شركة",
+  "clients.balanceDue": "الرصيد المستحق",
+  "clients.lastActivity": "آخر نشاط",
+  "clients.status": "الحالة",
+  "clients.status.paid": "مسدد",
+  "clients.status.pending": "قيد التحصيل",
+  "clients.status.overdue": "متأخر",
+
+  "actions.save": "حفظ",
+  "actions.cancel": "إلغاء",
+  "actions.delete": "حذف",
+  "actions.edit": "تعديل",
+  "actions.print": "طباعة",
+  "actions.export": "تصدير Excel"
+}
