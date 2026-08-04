@@ -5,7 +5,7 @@ const { pool, withTransaction } = require('./db');
 const { clientFinancials } = require('./services/clients-service');
 const { bagFundLedgerFromDb, createBagStockEntry } = require('./services/bagstock-service');
 const { postCourseInvoice, postPurchase, postManualSale } = require('./services/accounting-service');
-const { createVaultTransaction } = require('./services/vault-service');
+const { createVaultTransaction, deleteVaultTransaction } = require('./services/vault-service');
 const { createClient, assignInvoiceNumber } = require('./services/create-client-service');
 const { listClients } = require('./services/list-clients-service');
 const { listVaultTransactions } = require('./services/list-vault-service');
@@ -15,6 +15,17 @@ const {
   createCompanyTransfer, allocateClientsToTransfer, syncClientsFromTransfer,
   listCompanyTransfers, getCompanyTransfer,
 } = require('./services/company-transfers-service');
+const {
+  login, me, requireAuth, requireAdmin, changePassword,
+  listUsers, createUser, updateUser,
+} = require('./services/auth-service');
+const {
+  incomeStatement, balanceSheet, cashFlow, arAging, apAging, vatReturn,
+  trialBalance, zakat,
+} = require('./services/reports-service');
+const { listAccounts, listJournalEntries, createManualEntry } = require('./services/ledger-service');
+const { listSuppliers, createPurchase } = require('./services/purchases-write-service');
+const { listManualSales, createManualSale } = require('./services/manual-sales-service');
 
 const app = express();
 app.use(express.json());
@@ -26,6 +37,180 @@ app.get('/api/health', async (req, res) => {
     res.json({ ok: true, db: 'connected' });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const result = await login({
+      username: req.body.username,
+      password: req.body.password,
+      ipAddress: req.ip,
+      deviceInfo: req.headers['user-agent'],
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(401).json({ error: err.message });
+  }
+});
+
+// كل مسارات /api بعد دي محمية — لازم توكن Bearer صالح
+app.use('/api', requireAuth);
+
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    res.json(await me(req.user.id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ إدارة المستخدمين (admin فقط) ============
+app.get('/api/users', requireAdmin, async (req, res) => {
+  try {
+    res.json(await listUsers());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/users', requireAdmin, async (req, res) => {
+  try {
+    res.status(201).json(await createUser(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    res.json(await updateUser(req.params.id, req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/change-password', requireAdmin, async (req, res) => {
+  try {
+    res.json(await changePassword(req.user.id, req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ============ التقارير المالية ============
+function reportDate(value, fallback) {
+  return value || fallback;
+}
+
+app.get('/api/reports/income-statement', async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const startOfYear = `${new Date().getFullYear()}-01-01`;
+    res.json(await incomeStatement({
+      from: reportDate(req.query.from, startOfYear),
+      to: reportDate(req.query.to, today),
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/balance-sheet', async (req, res) => {
+  try {
+    res.json(await balanceSheet({ asOf: reportDate(req.query.asOf, new Date().toISOString().slice(0, 10)) }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/cash-flow', async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const startOfYear = `${new Date().getFullYear()}-01-01`;
+    res.json(await cashFlow({
+      from: reportDate(req.query.from, startOfYear),
+      to: reportDate(req.query.to, today),
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/ar-aging', async (req, res) => {
+  try {
+    res.json(await arAging({ asOf: reportDate(req.query.asOf, new Date().toISOString().slice(0, 10)) }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/ap-aging', async (req, res) => {
+  try {
+    res.json(await apAging({ asOf: reportDate(req.query.asOf, new Date().toISOString().slice(0, 10)) }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/vat', async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const startOfYear = `${new Date().getFullYear()}-01-01`;
+    res.json(await vatReturn({
+      from: reportDate(req.query.from, startOfYear),
+      to: reportDate(req.query.to, today),
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/trial-balance', async (req, res) => {
+  try {
+    res.json(await trialBalance({ asOf: req.query.asOf || null }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/zakat', async (req, res) => {
+  try {
+    res.json(await zakat({ year: parseInt(req.query.year, 10) || new Date().getFullYear() }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ شجرة الحسابات واليومية ============
+app.get('/api/accounts', async (req, res) => {
+  try {
+    res.json(await listAccounts());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});app.get('/api/journal', async (req, res) => {
+  try {
+    res.json(await listJournalEntries({
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/journal', requireAdmin, async (req, res) => {
+  try {
+    res.status(201).json(await createManualEntry({
+      entryDate: req.body.entryDate,
+      description: req.body.description,
+      entryKind: req.body.entryKind,
+      lines: req.body.lines,
+      userId: req.user.id,
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -123,6 +308,18 @@ app.get('/api/vault-transactions', async (req, res) => {
   }
 });
 
+// حذف منطقي لحركة خزينة (LOGIC.md §2.2) — ممنوع حذف فعلي أبداً
+app.delete('/api/vault-transactions/:id', async (req, res) => {
+  try {
+    res.json(await deleteVaultTransaction(req.params.id, {
+      userId: req.user.id,
+      reason: req.body?.reason || null,
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.get('/api/invoices', async (req, res) => {
   try {
     const result = await listInvoices({
@@ -156,11 +353,55 @@ app.get('/api/purchases', async (req, res) => {
   }
 });
 
+app.get('/api/suppliers', async (req, res) => {
+  try {
+    res.json(await listSuppliers());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/purchases', async (req, res) => {
+  try {
+    res.status(201).json(await createPurchase(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/manual-sales', async (req, res) => {
+  try {
+    res.json(await listManualSales({
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/manual-sales', async (req, res) => {
+  try {
+    res.status(201).json(await createManualSale(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.post('/api/manual-sales/:id/post', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM manual_sales_invoices WHERE id = $1', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'الفاتورة غير موجودة' });
     res.json(await postManualSale(rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/companies', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM companies ORDER BY name');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

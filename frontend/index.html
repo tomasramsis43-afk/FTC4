@@ -34,6 +34,8 @@
   .page-title{font-size:16px;font-weight:600;}
   .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+  .btn-logout{font-family:inherit;font-size:12px;border-radius:4px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn-logout:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
   table{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -61,13 +63,21 @@
     <a class="sb-item" href="/bagstock.html" style="text-decoration:none;color:inherit" data-i18n="bagstock.title">مخزون الحقائب</a>
     <a class="sb-item" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
     <a class="sb-item" href="/purchases.html" data-i18n="purchases.title">المشتريات</a>
+    <a class="sb-item" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
+    <a class="sb-item" href="/company-transfers.html" data-i18n="nav.companyTransfers">حوالات الشركات</a>
+    <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
+    <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
+    <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
   </div>
 
   <div class="main">
     <div class="topbar">
       <div data-i18n="clients.title">سجل العملاء</div>
-      <div class="lang-toggle" id="lang-toggle">
-        <span data-lang="ar">عربي</span><span data-lang="en">EN</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="lang-toggle" id="lang-toggle">
+          <span data-lang="ar">عربي</span><span data-lang="en">EN</span>
+        </div>
+        <button class="btn-logout" id="logout-btn" data-i18n="auth.logout">تسجيل الخروج</button>
       </div>
     </div>
     <div class="content">
@@ -97,7 +107,30 @@
 
 <script>
 let i18n = {};
-let currentLang = 'ar';
+let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
+
+const ftc4Token = localStorage.getItem('ftc4_token');
+if (!ftc4Token) location.replace('/login.html');
+
+async function ftc4Fetch(url, opts = {}) {
+  const headers = new Headers(opts.headers || {});
+  headers.set('Authorization', 'Bearer ' + ftc4Token);
+  if (opts.body) headers.set('Content-Type', 'application/json');
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) {
+    localStorage.removeItem('ftc4_token');
+    localStorage.removeItem('ftc4_user');
+    location.replace('/login.html');
+    return null;
+  }
+  return res;
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('ftc4_token');
+  localStorage.removeItem('ftc4_user');
+  location.replace('/login.html');
+});
 
 async function loadI18n(lang) {
   const res = await fetch(`/i18n/${lang}.json`);
@@ -130,7 +163,7 @@ async function loadClients() {
   const tbody = document.getElementById('clients-tbody');
   tbody.innerHTML = `<tr><td colspan="5" class="loading">...</td></tr>`;
   try {
-    const res = await fetch('/api/clients?pageSize=50');
+    const res = await ftc4Fetch('/api/clients?pageSize=50');
     const { data, total } = await res.json();
     if (!data.length) {
       tbody.innerHTML = `<tr><td colspan="5" class="empty">لا يوجد عملاء</td></tr>`;
@@ -155,6 +188,7 @@ document.getElementById('lang-toggle').addEventListener('click', async (e) => {
   const lang = e.target.dataset.lang;
   if (!lang || lang === currentLang) return;
   currentLang = lang;
+  localStorage.setItem('ftc4_lang', lang);
   await loadI18n(lang);
   applyI18n();
   loadClients(); // إعادة رسم الجدول بلغة النظام الجديدة (بيانات العميل نفسها متتغيرش زي ما اتفقنا)

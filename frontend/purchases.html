@@ -24,6 +24,8 @@
   .lang-toggle{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;cursor:pointer;}
   .lang-toggle span{padding:6px 12px;font-size:12px;}
   .lang-toggle span.active{background:var(--primary);color:#fff;}
+  .btn-logout{font-family:inherit;font-size:12px;border-radius:4px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn-logout:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
   .content{padding:20px 24px;}
   .page-title{font-size:16px;font-weight:600;margin-bottom:16px;}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
@@ -38,6 +40,22 @@
   .badge.unpaid{background:var(--warning-bg);color:var(--warning);}
   .loading, .empty{padding:40px;text-align:center;color:var(--text-dim);}
   .footer{padding:10px 16px;font-size:11.5px;color:var(--text-dim);}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+  .btn.small{padding:5px 10px;font-size:11.5px;}
+  .notice{display:none;padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+  .notice.show{display:block;}
+  .notice.error{background:var(--danger-bg);color:var(--danger);}
+  .notice.ok{background:var(--success-bg);color:var(--success);}
+  .form-panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;}
+  .form-panel.show{display:block;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .item-row{display:grid;grid-template-columns:1fr 80px 130px 34px;gap:10px;margin-bottom:8px;align-items:center;}
+  .item-row input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .row-remove{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:4px;background:var(--danger-bg);color:var(--danger);cursor:pointer;height:30px;}
 </style>
 </head>
 <body>
@@ -48,15 +66,45 @@
     <a class="sb-item" href="/bagstock.html" data-i18n="bagstock.title">مخزون الحقائب</a>
     <a class="sb-item" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
     <a class="sb-item active" href="/purchases.html" data-i18n="purchases.title">المشتريات</a>
+    <a class="sb-item" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
+    <a class="sb-item" href="/company-transfers.html" data-i18n="nav.companyTransfers">حوالات الشركات</a>
+    <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
+    <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
+    <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
   </div>
 
   <div class="main">
     <div class="topbar">
       <div data-i18n="purchases.title">المشتريات</div>
-      <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+        <button class="btn-logout" id="logout-btn" data-i18n="auth.logout">تسجيل الخروج</button>
+      </div>
     </div>
     <div class="content">
-      <div class="page-title" data-i18n="purchases.title">المشتريات</div>
+      <div class="page-head">
+        <div class="page-title" data-i18n="purchases.title">المشتريات</div>
+        <button class="btn primary" id="new-purchase-btn" data-i18n="purchases.new">شراء جديد</button>
+      </div>
+
+      <div class="notice" id="notice"></div>
+
+      <div class="form-panel" id="form-panel">
+        <div class="form-row">
+          <div class="field"><label data-i18n="purchases.supplierOptional">المورد (اختياري)</label><select id="f-supplier"></select></div>
+          <div class="field"><label data-i18n="purchases.invoiceNo">رقم فاتورة المورد</label><input id="f-invoice-no"></div>
+          <div class="field"><label data-i18n="vault.date">التاريخ</label><input type="date" id="f-date"></div>
+          <div class="field"><label data-i18n="purchases.status.unpaid">الحالة</label>
+            <select id="f-status"><option value="unpaid">unpaid</option><option value="paid">paid</option></select>
+          </div>
+        </div>
+        <div class="item-row"><span data-i18n="purchases.itemName">اسم الصنف</span><span data-i18n="purchases.qty">الكمية</span><span data-i18n="purchases.unitPrice">سعر الوحدة (بدون ضريبة)</span><span></span></div>
+        <div id="items"></div>
+        <button class="btn" id="add-item-btn" data-i18n="purchases.addItem">أضف صنف</button>
+        <button class="btn primary" id="save-purchase-btn" data-i18n="actions.save" style="margin-inline-start:8px">حفظ</button>
+        <button class="btn" id="cancel-purchase-btn" data-i18n="actions.cancel">إلغاء</button>
+      </div>
+
       <div class="card">
         <table>
           <thead>
@@ -68,9 +116,10 @@
               <th data-i18n="purchases.tax">الضريبة</th>
               <th data-i18n="purchases.total">الإجمالي</th>
               <th>الحالة</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="pur-tbody"><tr><td colspan="7" class="loading">...</td></tr></tbody>
+          <tbody id="pur-tbody"><tr><td colspan="8" class="loading">...</td></tr></tbody>
         </table>
         <div class="footer" id="footer-count"></div>
       </div>
@@ -79,7 +128,30 @@
 
 <script>
 let i18n = {};
-let currentLang = 'ar';
+let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
+
+const ftc4Token = localStorage.getItem('ftc4_token');
+if (!ftc4Token) location.replace('/login.html');
+
+async function ftc4Fetch(url, opts = {}) {
+  const headers = new Headers(opts.headers || {});
+  headers.set('Authorization', 'Bearer ' + ftc4Token);
+  if (opts.body) headers.set('Content-Type', 'application/json');
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) {
+    localStorage.removeItem('ftc4_token');
+    localStorage.removeItem('ftc4_user');
+    location.replace('/login.html');
+    return null;
+  }
+  return res;
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('ftc4_token');
+  localStorage.removeItem('ftc4_user');
+  location.replace('/login.html');
+});
 
 async function loadI18n(lang){ const r = await fetch(`/i18n/${lang}.json`); i18n = await r.json(); }
 function applyI18n(){
@@ -92,10 +164,10 @@ function fmtNum(n){ return Number(n).toLocaleString('en-US',{minimumFractionDigi
 
 async function loadPurchases(){
   const tbody = document.getElementById('pur-tbody');
-  tbody.innerHTML = `<tr><td colspan="7" class="loading">...</td></tr>`;
-  const res = await fetch('/api/purchases?pageSize=50');
+  tbody.innerHTML = `<tr><td colspan="8" class="loading">...</td></tr>`;
+  const res = await ftc4Fetch('/api/purchases?pageSize=50');
   const { data, total } = await res.json();
-  if(!data.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty">—</td></tr>`; return; }
+  if(!data.length){ tbody.innerHTML = `<tr><td colspan="8" class="empty">—</td></tr>`; return; }
   tbody.innerHTML = data.map(p => `
     <tr>
       <td class="code">${p.invoice_no || '—'}</td>
@@ -105,15 +177,95 @@ async function loadPurchases(){
       <td class="amount">${fmtNum(p.tax_amount)}</td>
       <td class="amount">${fmtNum(p.total)}</td>
       <td><span class="badge ${p.status}">${i18n['purchases.status.'+p.status] || p.status}</span></td>
+      <td>${p.linked_journal_entry_id ? '' : `<button class="btn small primary" data-post="${p.id}">${i18n['purchases.post'] || 'ترحيل للقيود'}</button>`}</td>
     </tr>
   `).join('');
   document.getElementById('footer-count').textContent = `${data.length} / ${total}`;
+  tbody.querySelectorAll('[data-post]').forEach(b => b.addEventListener('click', async () => {
+    const r = await ftc4Fetch(`/api/purchases/${b.dataset.post}/post`, { method: 'POST' });
+    if (!r) return;
+    const d = await r.json();
+    if (!r.ok) { showNotice(d.error, false); return; }
+    showNotice(d.posted ? 'تم الترحيل' : d.reason, d.posted);
+    loadPurchases();
+  }));
 }
+
+function showNotice(msg, ok) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.className = 'notice show ' + (ok ? 'ok' : 'error');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ============ إنشاء شراء جديد ============
+let suppliers = [];
+async function loadSuppliers() {
+  const res = await ftc4Fetch('/api/suppliers');
+  if (!res) return;
+  suppliers = await res.json();
+  document.getElementById('f-supplier').innerHTML = `<option value="">—</option>` +
+    suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+document.getElementById('new-purchase-btn').addEventListener('click', async () => {
+  if (!suppliers.length) await loadSuppliers();
+  document.getElementById('form-panel').classList.add('show');
+  document.getElementById('f-invoice-no').value = '';
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-status').value = 'unpaid';
+  document.getElementById('items').innerHTML = '';
+  addItem();
+});
+
+document.getElementById('cancel-purchase-btn').addEventListener('click', () => document.getElementById('form-panel').classList.remove('show'));
+
+function addItem() {
+  const el = document.createElement('div');
+  el.className = 'item-row';
+  el.innerHTML = `
+    <input class="i-name" placeholder="${i18n['purchases.itemName'] || 'اسم الصنف'}">
+    <input class="i-qty" type="number" min="1" value="1">
+    <input class="i-price" type="number" step="0.01" min="0" value="0">
+    <button class="row-remove" type="button">×</button>`;
+  el.querySelector('.row-remove').addEventListener('click', () => el.remove());
+  document.getElementById('items').appendChild(el);
+}
+document.getElementById('add-item-btn').addEventListener('click', addItem);
+
+document.getElementById('save-purchase-btn').addEventListener('click', async () => {
+  const items = [...document.querySelectorAll('#items .item-row')].map(r => ({
+    itemName: r.querySelector('.i-name').value.trim(),
+    qty: parseFloat(r.querySelector('.i-qty').value) || 0,
+    unitPrice: parseFloat(r.querySelector('.i-price').value) || 0,
+  })).filter(i => i.itemName);
+  try {
+    const res = await ftc4Fetch('/api/purchases', {
+      method: 'POST',
+      body: JSON.stringify({
+        supplierId: document.getElementById('f-supplier').value || null,
+        invoiceNo: document.getElementById('f-invoice-no').value.trim() || null,
+        purchaseDate: document.getElementById('f-date').value,
+        status: document.getElementById('f-status').value,
+        items,
+      }),
+    });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('form-panel').classList.remove('show');
+    showNotice('تم تسجيل الشراء', true);
+    loadPurchases();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
+});
 
 document.getElementById('lang-toggle').addEventListener('click', async (e)=>{
   const lang = e.target.dataset.lang;
   if(!lang || lang===currentLang) return;
   currentLang = lang;
+  localStorage.setItem('ftc4_lang', lang);
   await loadI18n(lang); applyI18n(); loadPurchases();
 });
 

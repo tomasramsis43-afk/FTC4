@@ -25,6 +25,8 @@
   .lang-toggle{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;cursor:pointer;}
   .lang-toggle span{padding:6px 12px;font-size:12px;}
   .lang-toggle span.active{background:var(--primary);color:#fff;}
+  .btn-logout{font-family:inherit;font-size:12px;border-radius:4px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn-logout:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
   .content{padding:20px 24px;}
   .page-title{font-size:16px;font-weight:600;margin-bottom:16px;}
 
@@ -45,6 +47,8 @@
   .badge.out{background:var(--danger-bg);color:var(--danger);}
   .loading, .empty{padding:40px;text-align:center;color:var(--text-dim);}
   .footer{padding:10px 16px;font-size:11.5px;color:var(--text-dim);}
+  .btn-delete{font-family:inherit;font-size:12px;border-radius:4px;padding:4px 9px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--danger);}
+  .btn-delete:hover{background:var(--danger-bg);border-color:var(--danger);}
 </style>
 </head>
 <body>
@@ -55,12 +59,20 @@
     <a class="sb-item" href="/bagstock.html" data-i18n="bagstock.title">مخزون الحقائب</a>
     <a class="sb-item" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
     <a class="sb-item" href="/purchases.html" data-i18n="purchases.title">المشتريات</a>
+    <a class="sb-item" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
+    <a class="sb-item" href="/company-transfers.html" data-i18n="nav.companyTransfers">حوالات الشركات</a>
+    <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
+    <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
+    <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
   </div>
 
   <div class="main">
     <div class="topbar">
       <div data-i18n="vault.title">الخزينة</div>
-      <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+        <button class="btn-logout" id="logout-btn" data-i18n="auth.logout">تسجيل الخروج</button>
+      </div>
     </div>
     <div class="content">
       <div class="page-title" data-i18n="vault.title">الخزينة</div>
@@ -76,9 +88,10 @@
               <th data-i18n="vault.category">التصنيف</th>
               <th data-i18n="vault.client">العميل</th>
               <th data-i18n="vault.amount">المبلغ</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="vault-tbody"><tr><td colspan="5" class="loading">...</td></tr></tbody>
+          <tbody id="vault-tbody"><tr><td colspan="6" class="loading">...</td></tr></tbody>
         </table>
         <div class="footer" id="footer-count"></div>
       </div>
@@ -87,9 +100,32 @@
 
 <script>
 let i18n = {};
-let currentLang = 'ar';
+let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
 let currentDest = null;
 const DESTS = ['vault','bank','network','other'];
+
+const ftc4Token = localStorage.getItem('ftc4_token');
+if (!ftc4Token) location.replace('/login.html');
+
+async function ftc4Fetch(url, opts = {}) {
+  const headers = new Headers(opts.headers || {});
+  headers.set('Authorization', 'Bearer ' + ftc4Token);
+  if (opts.body) headers.set('Content-Type', 'application/json');
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) {
+    localStorage.removeItem('ftc4_token');
+    localStorage.removeItem('ftc4_user');
+    location.replace('/login.html');
+    return null;
+  }
+  return res;
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('ftc4_token');
+  localStorage.removeItem('ftc4_user');
+  location.replace('/login.html');
+});
 
 async function loadI18n(lang){ const r = await fetch(`/i18n/${lang}.json`); i18n = await r.json(); }
 
@@ -102,9 +138,9 @@ function applyI18n(){
 
 async function loadVault(){
   const tbody = document.getElementById('vault-tbody');
-  tbody.innerHTML = `<tr><td colspan="5" class="loading">...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" class="loading">...</td></tr>`;
   const url = currentDest ? `/api/vault-transactions?destination=${currentDest}&pageSize=50` : `/api/vault-transactions?pageSize=50`;
-  const res = await fetch(url);
+  const res = await ftc4Fetch(url);
   const { data, total, balances } = await res.json();
 
   document.getElementById('balance-strip').innerHTML = DESTS.map(d => `
@@ -118,7 +154,7 @@ async function loadVault(){
     loadVault();
   }));
 
-  if(!data.length){ tbody.innerHTML = `<tr><td colspan="5" class="empty">—</td></tr>`; return; }
+  if(!data.length){ tbody.innerHTML = `<tr><td colspan="6" class="empty">—</td></tr>`; return; }
   tbody.innerHTML = data.map(t => `
     <tr>
       <td>${t.seq} <span class="badge ${t.tx_type}">${i18n['vault.type.'+t.tx_type]||t.tx_type}</span></td>
@@ -126,8 +162,19 @@ async function loadVault(){
       <td>${t.category || '—'}</td>
       <td>${t.client_name || '—'}</td>
       <td class="amount">${Number(t.amount).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+      <td><button class="btn-logout btn-delete" data-del="${t.id}" data-seq="${t.seq}">✕</button></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', async () => {
+    const reason = prompt(i18n['vault.deleteReason'] || 'سبب الحذف (إلزامي — يُسجَّل في سجل التدقيق)');
+    if (reason === null) return;
+    const msg = (i18n['vault.confirmDelete'] || 'حذف حركة #{{seq}}؟ لا يمكن التراجع (حذف منطقي مسجّل).').replace('{{seq}}', b.dataset.seq);
+    if (!confirm(msg)) return;
+    const r = await ftc4Fetch(`/api/vault-transactions/${b.dataset.del}`, { method: 'DELETE', body: JSON.stringify({ reason }) });
+    if (!r) return;
+    if (!r.ok) { const d = await r.json(); alert(d.error || 'فشل الحذف'); return; }
+    loadVault();
+  }));
   document.getElementById('footer-count').textContent = `${data.length} / ${total}`;
 }
 
@@ -135,6 +182,7 @@ document.getElementById('lang-toggle').addEventListener('click', async (e)=>{
   const lang = e.target.dataset.lang;
   if(!lang || lang===currentLang) return;
   currentLang = lang;
+  localStorage.setItem('ftc4_lang', lang);
   await loadI18n(lang); applyI18n(); loadVault();
 });
 

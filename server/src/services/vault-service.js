@@ -53,4 +53,29 @@ async function createVaultTransaction(input) {
   });
 }
 
-module.exports = { allocVaultSeq, createVaultTransaction };
+// الحذف المنطقي (Soft Delete) — LOGIC.md §2.2
+// الحركة ما بتتحذفش فعلياً أبداً: بتتوسم deleted_at/deleted_by/deleted_reason
+// والرقم التسلسلي الأصلي ما بيترجعش للاستخدام (قاعدة §2.1: الأرقام الرسمية لا تُعاد)
+async function deleteVaultTransaction(id, { userId, reason } = {}) {
+  return withTransaction(async (dbClient) => {
+    const { rows } = await dbClient.query(
+      `UPDATE vault_transactions
+       SET deleted_at = now(), deleted_by = $2, deleted_reason = $3
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING *`,
+      [id, userId || null, reason || null]
+    );
+    if (!rows.length) throw new Error('الحركة غير موجودة أو محذوفة بالفعل');
+    const tx = rows[0];
+
+    await dbClient.query(
+      `INSERT INTO audit_log (action, module, description, user_id)
+       VALUES ('delete', 'vault', $1, $2)`,
+      [`حذف حركة خزينة #${tx.seq} (${tx.destination}) مبلغ ${tx.amount}: ${tx.notes || ''}`.trim(),
+       userId || null]
+    );
+    return tx;
+  });
+}
+
+module.exports = { allocVaultSeq, createVaultTransaction, deleteVaultTransaction };

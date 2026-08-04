@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTC4 — Users</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2f3f5; --sidebar:#182335; --sidebar-hover:#22304a; --panel:#ffffff; --line:#dde1e6;
+    --text:#191c22; --text-dim:#6b7280; --primary:#2563a8; --primary-bg:#e5eef7;
+    --success:#1f8a5f; --success-bg:#e4f3ec; --warning:#b7791f; --warning-bg:#faf1e0;
+    --danger:#c0392b; --danger-bg:#fbe9e7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Arabic',sans-serif;font-size:13px;display:flex;min-height:100vh;}
+  [dir="ltr"] body{font-family:'IBM Plex Mono','IBM Plex Sans Arabic',sans-serif;}
+
+  .sidebar{width:216px;background:var(--sidebar);color:#cdd4e0;flex-shrink:0;padding:18px 0;}
+  .sb-brand{display:flex;align-items:center;gap:10px;padding:0 18px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;}
+  .sb-brand-mark{width:28px;height:28px;border-radius:5px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;}
+  .sb-brand-text{font-size:13.5px;font-weight:600;color:#fff;}
+  .sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:12.5px;color:#b9c1d1;cursor:pointer;border-inline-end:2px solid transparent;text-decoration:none;}
+  .sb-item.active{background:var(--sidebar-hover);color:#fff;border-inline-end:2px solid var(--primary);}
+
+  .main{flex:1;min-width:0;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border-bottom:1px solid var(--line);padding:12px 24px;}
+  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .lang-toggle{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;cursor:pointer;}
+  .lang-toggle span{padding:6px 12px;font-size:12px;}
+  .lang-toggle span.active{background:var(--primary);color:#fff;}
+  .btn-logout{font-family:inherit;font-size:12px;border-radius:4px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn-logout:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
+
+  .content{padding:20px 24px;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .page-title{font-size:16px;font-weight:600;}
+  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:start;font-weight:600;color:var(--text-dim);font-size:11px;padding:9px 14px;border-bottom:1px solid var(--line);background:#f7f8f9;white-space:nowrap;}
+  tbody td{padding:9px 14px;border-bottom:1px solid var(--line);}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  .badge{font-size:10.5px;padding:3px 8px;border-radius:3px;font-weight:600;display:inline-block;}
+  .badge.role-admin{background:var(--primary-bg);color:var(--primary);}
+  .badge.role-reception{background:var(--warning-bg);color:var(--warning);}
+  .badge.active{background:var(--success-bg);color:var(--success);}
+  .badge.inactive{background:var(--danger-bg);color:var(--danger);}
+  .loading,.empty{padding:40px;text-align:center;color:var(--text-dim);}
+  .link-btn{background:none;border:none;color:var(--primary);cursor:pointer;font-family:inherit;font-size:12px;padding:2px 4px;}
+
+  .form-panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;max-width:560px;}
+  .form-panel.show{display:block;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);}
+  .notice{padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+  .notice.error{background:var(--danger-bg);color:var(--danger);}
+  .notice.ok{background:var(--success-bg);color:var(--success);}
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-mark">FT</div>
+      <div class="sb-brand-text">FTC4</div>
+    </div>
+    <a class="sb-item" href="/index.html" data-i18n="nav.clients">العملاء</a>
+    <a class="sb-item" href="/vault.html" data-i18n="nav.vault">الخزينة</a>
+    <a class="sb-item" href="/bagstock.html" data-i18n="bagstock.title">مخزون الحقائب</a>
+    <a class="sb-item" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
+    <a class="sb-item" href="/purchases.html" data-i18n="purchases.title">المشتريات</a>
+    <a class="sb-item" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
+    <a class="sb-item" href="/company-transfers.html" data-i18n="nav.companyTransfers">حوالات الشركات</a>
+    <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
+    <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
+    <a class="sb-item active" href="/users.html" data-i18n="nav.users">المستخدمون</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div data-i18n="nav.users">المستخدمون</div>
+      <div class="topbar-left">
+        <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+        <button class="btn-logout" id="logout-btn" data-i18n="auth.logout">تسجيل الخروج</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page-head">
+        <div class="page-title" data-i18n="nav.users">المستخدمون</div>
+        <button class="btn primary" id="new-user-btn" data-i18n="users.new">مستخدم جديد</button>
+      </div>
+
+      <div class="notice error" id="notice" style="display:none"></div>
+
+      <div class="form-panel" id="form-panel">
+        <div class="form-row">
+          <div class="field"><label data-i18n="users.username">اسم المستخدم</label><input id="f-username"></div>
+          <div class="field"><label data-i18n="users.password">كلمة المرور (6+ أحرف)</label><input id="f-password" type="password"></div>
+          <div class="field"><label data-i18n="users.fullName">الاسم الكامل</label><input id="f-fullname"></div>
+          <div class="field"><label data-i18n="users.role">الدور</label>
+            <select id="f-role"><option value="reception">reception</option><option value="admin">admin</option></select>
+          </div>
+        </div>
+        <button class="btn primary" id="save-user-btn" data-i18n="actions.save">حفظ</button>
+        <button class="btn" id="cancel-btn" data-i18n="actions.cancel">إلغاء</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="users.username">اسم المستخدم</th>
+              <th data-i18n="users.fullName">الاسم الكامل</th>
+              <th data-i18n="users.role">الدور</th>
+              <th data-i18n="users.status">الحالة</th>
+              <th data-i18n="users.createdAt">تاريخ الإنشاء</th>
+              <th data-i18n="users.actions">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="6" class="loading">...جارِ التحميل</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+let i18n = {};
+let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
+const token = localStorage.getItem('ftc4_token');
+const currentUser = JSON.parse(localStorage.getItem('ftc4_user') || '{}');
+
+if (!token) location.replace('/login.html');
+if (currentUser.role !== 'admin') location.replace('/index.html');
+
+async function ftc4Fetch(url, opts = {}) {
+  const headers = new Headers(opts.headers || {});
+  headers.set('Authorization', 'Bearer ' + token);
+  if (opts.body) headers.set('Content-Type', 'application/json');
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) { localStorage.removeItem('ftc4_token'); location.replace('/login.html'); return null; }
+  return res;
+}
+
+async function loadI18n(lang) {
+  const res = await fetch(`/i18n/${lang}.json`);
+  i18n = await res.json();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[key]) el.textContent = i18n[key];
+  });
+  const root = document.getElementById('html-root');
+  root.setAttribute('lang', currentLang);
+  root.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+  document.querySelectorAll('#lang-toggle span').forEach(s => s.classList.toggle('active', s.dataset.lang === currentLang));
+}
+
+function roleBadge(role) {
+  return `<span class="badge role-${role}">${i18n['users.role.' + role] || role}</span>`;
+}
+function activeBadge(active) {
+  return `<span class="badge ${active ? 'active' : 'inactive'}">${i18n[active ? 'users.active' : 'users.inactive']}</span>`;
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = `<tr><td colspan="6" class="loading">...</td></tr>`;
+  try {
+    const res = await ftc4Fetch('/api/users');
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (!data.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty">لا يوجد مستخدمون</td></tr>`; return; }
+    tbody.innerHTML = data.map(u => `
+      <tr>
+        <td>${u.username} ${u.id === currentUser.id ? `<span class="badge role-admin">me</span>` : ''}</td>
+        <td>${u.full_name || '—'}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td>${activeBadge(u.active)}</td>
+        <td>${new Date(u.created_at).toISOString().slice(0,10)}</td>
+        <td>
+          ${u.id !== currentUser.id ? `<button class="link-btn" data-action="toggle" data-id="${u.id}" data-active="${u.active}">${i18n[u.active ? 'users.deactivate' : 'users.activate']}</button>` : ''}
+          <button class="link-btn" data-action="reset" data-id="${u.id}" data-username="${u.username}">${i18n['users.resetPass']}</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">${err.message}</td></tr>`;
+  }
+}
+
+function showNotice(msg, ok) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.className = 'notice ' + (ok ? 'ok' : 'error');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+let editingId = null;
+document.getElementById('new-user-btn').addEventListener('click', () => {
+  editingId = null;
+  document.getElementById('f-username').value = '';
+  document.getElementById('f-password').value = '';
+  document.getElementById('f-fullname').value = '';
+  document.getElementById('f-role').value = 'reception';
+  document.getElementById('f-username').disabled = false;
+  document.getElementById('form-panel').classList.add('show');
+});
+
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  document.getElementById('form-panel').classList.remove('show');
+});
+
+document.getElementById('save-user-btn').addEventListener('click', async () => {
+  const username = document.getElementById('f-username').value.trim();
+  const password = document.getElementById('f-password').value;
+  const fullName = document.getElementById('f-fullname').value.trim();
+  const role = document.getElementById('f-role').value;
+  try {
+    const body = { fullName, role };
+    if (password) body.password = password;
+    if (!editingId) {
+      body.username = username;
+      body.password = password || '123456';
+    }
+    const res = await ftc4Fetch(editingId ? `/api/users/${editingId}` : '/api/users', {
+      method: editingId ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('form-panel').classList.remove('show');
+    showNotice(editingId ? 'تم التحديث' : 'تم إنشاء المستخدم', true);
+    loadUsers();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
+});
+
+document.getElementById('users-tbody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const { action, id, username } = btn.dataset;
+  try {
+    let body, msg;
+    if (action === 'toggle') {
+      body = { active: btn.dataset.active !== 'true' };
+      msg = 'تم تحديث الحالة';
+    } else if (action === 'reset') {
+      const pass = prompt(`كلمة مرور جديدة للمستخدم "${username}" (6+ أحرف):`);
+      if (!pass) return;
+      body = { password: pass };
+      msg = 'تم تغيير كلمة المرور';
+    }
+    const res = await ftc4Fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showNotice(msg, true);
+    loadUsers();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('ftc4_token');
+  localStorage.removeItem('ftc4_user');
+  location.replace('/login.html');
+});
+
+document.getElementById('lang-toggle').addEventListener('click', async (e) => {
+  const lang = e.target.dataset.lang;
+  if (!lang || lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem('ftc4_lang', lang);
+  await loadI18n(lang);
+  applyI18n();
+  loadUsers();
+});
+
+(async function init() {
+  await loadI18n(currentLang);
+  applyI18n();
+  await loadUsers();
+})();
+</script>
+</body>
+</html>

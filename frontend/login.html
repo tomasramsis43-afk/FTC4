@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTC4 — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2f3f5; --panel:#ffffff; --line:#dde1e6; --text:#191c22; --text-dim:#6b7280;
+    --primary:#2563a8; --primary-bg:#e5eef7; --danger:#c0392b; --danger-bg:#fbe9e7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Arabic',sans-serif;font-size:13px;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  [dir="ltr"] body{font-family:'IBM Plex Mono','IBM Plex Sans Arabic',sans-serif;}
+
+  .lang-toggle{position:fixed;top:16px;inset-inline-end:20px;display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;cursor:pointer;background:var(--panel);}
+  .lang-toggle span{padding:6px 12px;font-size:12px;}
+  .lang-toggle span.active{background:var(--primary);color:#fff;}
+
+  .login-card{width:360px;max-width:92vw;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:28px 26px;box-shadow:0 8px 30px rgba(24,35,53,.08);}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .brand-mark{width:32px;height:32px;border-radius:6px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;}
+  .brand-text{font-size:15px;font-weight:600;}
+  .subtitle{font-size:12px;color:var(--text-dim);margin-bottom:20px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
+  .field input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:13px;color:var(--text);background:#fff;}
+  .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-bg);}
+
+  .btn{width:100%;font-family:inherit;font-size:12.5px;border-radius:4px;padding:10px 14px;cursor:pointer;border:1px solid var(--primary);background:var(--primary);color:#fff;font-weight:600;margin-top:4px;}
+  .btn:disabled{opacity:.6;cursor:wait;}
+
+  .error{display:none;margin-top:12px;padding:9px 12px;border-radius:4px;background:var(--danger-bg);color:var(--danger);font-size:12px;}
+  .error.show{display:block;}
+</style>
+</head>
+<body>
+  <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-mark">FT</div>
+      <div class="brand-text">FTC4</div>
+    </div>
+    <div class="subtitle" data-i18n="login.subtitle">نظام إدارة مركز التدريب</div>
+
+    <div class="field">
+      <label data-i18n="login.username">اسم المستخدم</label>
+      <input id="username" autocomplete="username" data-i18n-placeholder="login.usernamePlaceholder" placeholder="username">
+    </div>
+    <div class="field">
+      <label data-i18n="login.password">كلمة المرور</label>
+      <input id="password" type="password" autocomplete="current-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="••••••••">
+    </div>
+
+    <button class="btn" id="submit-btn" data-i18n="login.submit">دخول</button>
+    <div class="error" id="error"></div>
+  </div>
+
+<script>
+let i18n = {};
+let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
+
+async function loadI18n(lang) {
+  const res = await fetch(`/i18n/${lang}.json`);
+  i18n = await res.json();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[key]) el.textContent = i18n[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18n[key]) el.placeholder = i18n[key];
+  });
+  const root = document.getElementById('html-root');
+  root.setAttribute('lang', currentLang);
+  root.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+  document.querySelectorAll('#lang-toggle span').forEach(s => s.classList.toggle('active', s.dataset.lang === currentLang));
+}
+
+document.getElementById('lang-toggle').addEventListener('click', async (e) => {
+  const lang = e.target.dataset.lang;
+  if (!lang || lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem('ftc4_lang', lang);
+  await loadI18n(lang);
+  applyI18n();
+});
+
+const btn = document.getElementById('submit-btn');
+const errorBox = document.getElementById('error');
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.classList.add('show');
+}
+
+document.getElementById('password').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doLogin();
+});
+
+btn.addEventListener('click', doLogin);
+
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  if (!username || !password) return showError(i18n['login.required'] || 'أدخل اسم المستخدم وكلمة المرور');
+  errorBox.classList.remove('show');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'خطأ في الدخول');
+    localStorage.setItem('ftc4_token', data.token);
+    localStorage.setItem('ftc4_user', JSON.stringify(data.user));
+    location.replace('/index.html');
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+(async function init() {
+  await loadI18n(currentLang);
+  applyI18n();
+})();
+</script>
+</body>
+</html>
