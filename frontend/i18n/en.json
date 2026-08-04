@@ -51,5 +51,15 @@
   "bagstock.entryType.issue": "Issued to Client",
   "bagstock.qty": "Qty",
   "bagstock.unitPrice": "Unit Price",
-  "bagstock.status.pending": "Pending Approval"
+  "bagstock.status.pending": "Pending Approval",
+
+  "invoices.title": "Invoices Registry",
+  "invoices.no": "Invoice No.",
+  "invoices.date": "Issue Date",
+  "invoices.client": "Client",
+  "invoices.course": "Course",
+  "invoices.totalInclVat": "Total (incl. VAT)",
+  "invoices.vat": "VAT",
+  "invoices.netAmount": "Net",
+  "invoices.bagIncluded": "Bag Included"
 }
