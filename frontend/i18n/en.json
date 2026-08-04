@@ -27,5 +27,19 @@
   "actions.delete": "Delete",
   "actions.edit": "Edit",
   "actions.print": "Print",
-  "actions.export": "Export Excel"
+  "actions.export": "Export Excel",
+
+  "vault.title": "Finance Vault",
+  "vault.destination.vault": "Cash",
+  "vault.destination.bank": "Bank",
+  "vault.destination.network": "Network",
+  "vault.destination.other": "Other",
+  "vault.type.in": "In",
+  "vault.type.out": "Out",
+  "vault.seq": "No.",
+  "vault.date": "Date",
+  "vault.category": "Category",
+  "vault.client": "Client",
+  "vault.amount": "Amount",
+  "vault.currentBalance": "Current Balance"
 }
