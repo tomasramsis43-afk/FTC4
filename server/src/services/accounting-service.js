@@ -74,4 +74,73 @@ async function postCourseInvoice(clientRow) {
   });
 }
 
-module.exports = { postCourseInvoice, diagnoseCourseInvoicePosting };
+// ب) فاتورة شراء (LOGIC.md §13.3-أ) — ⚠️ subtotal بدون ضريبة صراحة، الضريبة إضافة مش فك تضمين (§12.1)
+async function postPurchase(purchaseRow) {
+  return withTransaction(async (dbClient) => {
+    if (purchaseRow.linked_journal_entry_id) return { posted: false, reason: 'مُرحّلة بالفعل' };
+
+    const expenseId = await accountId(dbClient, '5000');
+    const vatId = await accountId(dbClient, ACCOUNTS.VAT);
+    const cashId = await accountId(dbClient, '1000');
+    const apId = await accountId(dbClient, '2000');
+
+    const { rows: entryRows } = await dbClient.query(
+      `INSERT INTO journal_entries (entry_date, description, is_auto, entry_kind, source_purchase_id)
+       VALUES ($1, $2, true, 'manual', $3) RETURNING id`,
+      [purchaseRow.purchase_date, `ترحيل تلقائي — فاتورة شراء #${purchaseRow.invoice_no || purchaseRow.id}`, purchaseRow.id]
+    );
+    const entryId = entryRows[0].id;
+
+    await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,$3,0)`,
+      [entryId, expenseId, num(purchaseRow.subtotal)]);
+    if (num(purchaseRow.tax_amount) >= 0.004) {
+      await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,$3,0)`,
+        [entryId, vatId, num(purchaseRow.tax_amount)]);
+    }
+    const creditAccountId = purchaseRow.status === 'paid' ? cashId : apId;
+    await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,0,$3)`,
+      [entryId, creditAccountId, num(purchaseRow.total)]);
+
+    await dbClient.query(`UPDATE purchases SET linked_journal_entry_id = $1 WHERE id = $2`, [entryId, purchaseRow.id]);
+    return { posted: true, entryId };
+  });
+}
+
+// ج) فاتورة مبيعات يدوية (LOGIC.md §13.3-ب) — شاملة الضريبة زي فواتير العملاء، فك تضمين
+async function postManualSale(saleRow) {
+  return withTransaction(async (dbClient) => {
+    if (saleRow.linked_journal_entry_id) return { posted: false, reason: 'مُرحّلة بالفعل' };
+
+    const gross = num(saleRow.total);
+    const vat = vatFromGross(gross);
+    const net = netFromGross(gross);
+
+    const arId = await accountId(dbClient, ACCOUNTS.AR);
+    const revId = await accountId(dbClient, ACCOUNTS.REVENUE);
+    const vatId = await accountId(dbClient, ACCOUNTS.VAT);
+
+    const { rows: entryRows } = await dbClient.query(
+      `INSERT INTO journal_entries (entry_date, description, is_auto, entry_kind, source_manual_sale_id)
+       VALUES ($1, $2, true, 'manual', $3) RETURNING id`,
+      [saleRow.sale_date, `ترحيل تلقائي — فاتورة مبيعات يدوية #${saleRow.invoice_no}`, saleRow.id]
+    );
+    const entryId = entryRows[0].id;
+
+    await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,$3,0)`,
+      [entryId, arId, gross]);
+    if (vat >= 0.004) {
+      await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,0,$3)`,
+        [entryId, revId, net]);
+      await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,0,$3)`,
+        [entryId, vatId, vat]);
+    } else {
+      await dbClient.query(`INSERT INTO journal_lines (entry_id, account_id, debit, credit) VALUES ($1,$2,0,$3)`,
+        [entryId, revId, gross]);
+    }
+
+    await dbClient.query(`UPDATE manual_sales_invoices SET linked_journal_entry_id = $1 WHERE id = $2`, [entryId, saleRow.id]);
+    return { posted: true, entryId };
+  });
+}
+
+module.exports = { postCourseInvoice, diagnoseCourseInvoicePosting, postPurchase, postManualSale };
