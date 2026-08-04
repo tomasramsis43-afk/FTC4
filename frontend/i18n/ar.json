@@ -41,5 +41,15 @@
   "vault.category": "التصنيف",
   "vault.client": "العميل",
   "vault.amount": "المبلغ",
-  "vault.currentBalance": "الرصيد الحالي"
+  "vault.currentBalance": "الرصيد الحالي",
+
+  "bagstock.title": "مخزون الحقائب",
+  "bagstock.totalBags": "إجمالي الحقائب",
+  "bagstock.pendingBalance": "رصيد متبقٍ (لم يكتمل حقيبة)",
+  "bagstock.entryType.deposit": "إيداع",
+  "bagstock.entryType.withdraw": "سحب",
+  "bagstock.entryType.issue": "تسليم لعميل",
+  "bagstock.qty": "الكمية",
+  "bagstock.unitPrice": "سعر الوحدة",
+  "bagstock.status.pending": "قيد الاعتماد"
 }
