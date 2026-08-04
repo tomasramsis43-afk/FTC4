@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const { pool, withTransaction } = require('./db');
 const { clientFinancials } = require('./services/clients-service');
-const { bagFundLedgerFromDb } = require('./services/bagstock-service');
+const { bagFundLedgerFromDb, createBagStockEntry } = require('./services/bagstock-service');
 const { postCourseInvoice, postPurchase, postManualSale } = require('./services/accounting-service');
 const { createVaultTransaction } = require('./services/vault-service');
 const { createClient, assignInvoiceNumber } = require('./services/create-client-service');
@@ -37,6 +37,14 @@ app.get('/api/clients/:id/financials', async (req, res) => {
 app.get('/api/bagstock/ledger', async (req, res) => {
   try {
     res.json(await bagFundLedgerFromDb());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/bagstock', async (req, res) => {
+  try {
+    res.status(201).json(await createBagStockEntry(req.body));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
