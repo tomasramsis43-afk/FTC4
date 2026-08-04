@@ -9,6 +9,7 @@ const { createVaultTransaction } = require('./services/vault-service');
 const { createClient, assignInvoiceNumber } = require('./services/create-client-service');
 const { listClients } = require('./services/list-clients-service');
 const { listVaultTransactions } = require('./services/list-vault-service');
+const { listInvoices } = require('./services/list-invoices-service');
 
 const app = express();
 app.use(express.json());
@@ -110,6 +111,18 @@ app.get('/api/vault-transactions', async (req, res) => {
       destination: req.query.destination,
       page: parseInt(req.query.page) || 1,
       pageSize: parseInt(req.query.pageSize) || 30,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/invoices', async (req, res) => {
+  try {
+    const result = await listInvoices({
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
     });
     res.json(result);
   } catch (err) {
