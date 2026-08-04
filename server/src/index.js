@@ -3,6 +3,7 @@ const express = require('express');
 const { pool } = require('./db');
 const { clientFinancials } = require('./services/clients-service');
 const { bagFundLedgerFromDb } = require('./services/bagstock-service');
+const { postCourseInvoice } = require('./services/accounting-service');
 
 const app = express();
 app.use(express.json());
@@ -33,6 +34,18 @@ app.get('/api/clients/:id/financials', async (req, res) => {
 app.get('/api/bagstock/ledger', async (req, res) => {
   try {
     const result = await bagFundLedgerFromDb();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// الترحيل التلقائي لفاتورة دورة عميل — راجع docs/LOGIC.md §13.3
+app.post('/api/clients/:id/post-invoice', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM clients WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'العميل غير موجود' });
+    const result = await postCourseInvoice(rows[0]);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
