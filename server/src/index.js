@@ -10,6 +10,7 @@ const { createClient, assignInvoiceNumber } = require('./services/create-client-
 const { listClients } = require('./services/list-clients-service');
 const { listVaultTransactions } = require('./services/list-vault-service');
 const { listInvoices } = require('./services/list-invoices-service');
+const { listPurchases } = require('./services/list-purchases-service');
 
 const app = express();
 app.use(express.json());
@@ -135,6 +136,17 @@ app.post('/api/purchases/:id/post', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM purchases WHERE id = $1', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'الفاتورة غير موجودة' });
     res.json(await postPurchase(rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/purchases', async (req, res) => {
+  try {
+    res.json(await listPurchases({
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
+    }));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
