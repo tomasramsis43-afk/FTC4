@@ -77,4 +77,16 @@ async function bagFundLedgerFromDb() {
   return recalcBagFundLedger(entries, bagPrice);
 }
 
-module.exports = { recalcBagFundLedger, bagFundLedgerFromDb };
+// إضافة سجل جديد (إيداع/سحب/تسليم/manualQty) — الحساب نفسه بيتعمل عند القراءة (recalcBagFundLedger)
+// مش وقت الإدخال، عشان يفضل النظام دايماً محسوب من الصفر ومحصّن ضد أي تعديل يدوي في النص
+async function createBagStockEntry(input) {
+  const { rows } = await pool.query(
+    `INSERT INTO bag_stock (entry_type, entry_date, manual_qty, amount, status, client_id, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [input.entry_type, input.entry_date, input.manual_qty || null, input.amount || null,
+     input.status || 'approved', input.client_id || null, input.created_by || null]
+  );
+  return rows[0];
+}
+
+module.exports = { recalcBagFundLedger, bagFundLedgerFromDb, createBagStockEntry };
