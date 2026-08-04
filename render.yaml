@@ -1,0 +1,19 @@
+# Render Blueprint — FTC4
+# النشر: Render يسحب الريبو، يبني داخل server/، ثم يقلع بـ npm start
+services:
+  - type: web
+    name: ftc4
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      # تُضبط يدوياً من داشبورد Render (لا تُرفع على git):
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
