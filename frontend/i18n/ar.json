@@ -27,5 +27,19 @@
   "actions.delete": "حذف",
   "actions.edit": "تعديل",
   "actions.print": "طباعة",
-  "actions.export": "تصدير Excel"
+  "actions.export": "تصدير Excel",
+
+  "vault.title": "الخزينة",
+  "vault.destination.vault": "الكاش",
+  "vault.destination.bank": "البنك",
+  "vault.destination.network": "الشبكة",
+  "vault.destination.other": "أخرى",
+  "vault.type.in": "وارد",
+  "vault.type.out": "صادر",
+  "vault.seq": "الرقم",
+  "vault.date": "التاريخ",
+  "vault.category": "التصنيف",
+  "vault.client": "العميل",
+  "vault.amount": "المبلغ",
+  "vault.currentBalance": "الرصيد الحالي"
 }
