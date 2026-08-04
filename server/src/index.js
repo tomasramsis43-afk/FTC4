@@ -8,6 +8,7 @@ const { postCourseInvoice, postPurchase, postManualSale } = require('./services/
 const { createVaultTransaction } = require('./services/vault-service');
 const { createClient, assignInvoiceNumber } = require('./services/create-client-service');
 const { listClients } = require('./services/list-clients-service');
+const { listVaultTransactions } = require('./services/list-vault-service');
 
 const app = express();
 app.use(express.json());
@@ -90,6 +91,19 @@ app.post('/api/clients/:id/assign-invoice-number', async (req, res) => {
 app.post('/api/vault-transactions', async (req, res) => {
   try {
     res.status(201).json(await createVaultTransaction(req.body));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/vault-transactions', async (req, res) => {
+  try {
+    const result = await listVaultTransactions({
+      destination: req.query.destination,
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 30,
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
