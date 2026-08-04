@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTC4 — Invoices</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2f3f5; --sidebar:#182335; --sidebar-hover:#22304a; --panel:#ffffff; --line:#dde1e6;
+    --text:#191c22; --text-dim:#6b7280; --primary:#2563a8; --primary-bg:#e5eef7;
+    --success:#1f8a5f; --success-bg:#e4f3ec; --warning:#b7791f; --warning-bg:#faf1e0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Arabic',sans-serif;font-size:13px;display:flex;min-height:100vh;}
+  .sidebar{width:216px;background:var(--sidebar);color:#cdd4e0;flex-shrink:0;padding:18px 0;}
+  .sb-brand{display:flex;align-items:center;gap:10px;padding:0 18px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;}
+  .sb-brand-mark{width:28px;height:28px;border-radius:5px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;}
+  .sb-brand-text{font-size:13.5px;font-weight:600;color:#fff;}
+  .sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:12.5px;color:#b9c1d1;cursor:pointer;border-inline-end:2px solid transparent;text-decoration:none;}
+  .sb-item.active{background:var(--sidebar-hover);color:#fff;border-inline-end:2px solid var(--primary);}
+  .main{flex:1;min-width:0;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border-bottom:1px solid var(--line);padding:12px 24px;}
+  .lang-toggle{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;cursor:pointer;}
+  .lang-toggle span{padding:6px 12px;font-size:12px;}
+  .lang-toggle span.active{background:var(--primary);color:#fff;}
+  .content{padding:20px 24px;}
+  .page-title{font-size:16px;font-weight:600;margin-bottom:16px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:start;font-weight:600;color:var(--text-dim);font-size:11px;padding:9px 14px;border-bottom:1px solid var(--line);background:#f7f8f9;white-space:nowrap;}
+  tbody td{padding:9px 14px;border-bottom:1px solid var(--line);}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  .amount{font-family:'IBM Plex Mono',monospace;direction:ltr;display:block;text-align:end;}
+  .code{font-family:'IBM Plex Mono',monospace;direction:ltr;color:var(--text-dim);}
+  .badge{font-size:10.5px;padding:3px 8px;border-radius:3px;font-weight:600;display:inline-block;background:var(--success-bg);color:var(--success);}
+  .loading, .empty{padding:40px;text-align:center;color:var(--text-dim);}
+  .footer{padding:10px 16px;font-size:11.5px;color:var(--text-dim);}
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sb-brand"><div class="sb-brand-mark">FT</div><div class="sb-brand-text">FTC4</div></div>
+    <a class="sb-item" href="/index.html" data-i18n="nav.clients">العملاء</a>
+    <a class="sb-item" href="/vault.html" data-i18n="nav.vault">الخزينة</a>
+    <a class="sb-item" href="/bagstock.html" data-i18n="bagstock.title">مخزون الحقائب</a>
+    <a class="sb-item active" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div data-i18n="invoices.title">سجل الفواتير</div>
+      <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
+    </div>
+    <div class="content">
+      <div class="page-title" data-i18n="invoices.title">سجل الفواتير</div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="invoices.no">رقم الفاتورة</th>
+              <th data-i18n="invoices.date">تاريخ الإصدار</th>
+              <th data-i18n="invoices.client">العميل</th>
+              <th data-i18n="invoices.course">الدورة</th>
+              <th data-i18n="invoices.totalInclVat">الإجمالي شامل الضريبة</th>
+              <th data-i18n="invoices.vat">الضريبة</th>
+              <th data-i18n="invoices.netAmount">الصافي</th>
+            </tr>
+          </thead>
+          <tbody id="inv-tbody"><tr><td colspan="7" class="loading">...</td></tr></tbody>
+        </table>
+        <div class="footer" id="footer-count"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+let i18n = {};
+let currentLang = 'ar';
+
+async function loadI18n(lang){ const r = await fetch(`/i18n/${lang}.json`); i18n = await r.json(); }
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(i18n[k]) el.textContent=i18n[k]; });
+  document.getElementById('html-root').setAttribute('lang', currentLang);
+  document.getElementById('html-root').setAttribute('dir', currentLang==='ar'?'rtl':'ltr');
+  document.querySelectorAll('#lang-toggle span').forEach(s=>s.classList.toggle('active', s.dataset.lang===currentLang));
+}
+function fmtNum(n){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:2}); }
+
+async function loadInvoices(){
+  const tbody = document.getElementById('inv-tbody');
+  tbody.innerHTML = `<tr><td colspan="7" class="loading">...</td></tr>`;
+  const res = await fetch('/api/invoices?pageSize=50');
+  const { data, total } = await res.json();
+  if(!data.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty">—</td></tr>`; return; }
+  tbody.innerHTML = data.map(inv => `
+    <tr>
+      <td class="code">INV-${String(inv.invoiceNo).padStart(6,'0')}</td>
+      <td>${inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().slice(0,10) : '—'}</td>
+      <td>${inv.clientName}</td>
+      <td>${inv.courseType || '—'} ${inv.bagShown ? `<span class="badge">${i18n['invoices.bagIncluded']||''}</span>` : ''}</td>
+      <td class="amount">${fmtNum(inv.totalInclVat)}</td>
+      <td class="amount">${fmtNum(inv.vat)}</td>
+      <td class="amount">${fmtNum(inv.netAmount)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('footer-count').textContent = `${data.length} / ${total}`;
+}
+
+document.getElementById('lang-toggle').addEventListener('click', async (e)=>{
+  const lang = e.target.dataset.lang;
+  if(!lang || lang===currentLang) return;
+  currentLang = lang;
+  await loadI18n(lang); applyI18n(); loadInvoices();
+});
+
+(async function init(){ await loadI18n(currentLang); applyI18n(); await loadInvoices(); })();
+</script>
+</body>
+</html>
