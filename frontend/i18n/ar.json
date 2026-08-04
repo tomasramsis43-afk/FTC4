@@ -61,5 +61,14 @@
   "invoices.totalInclVat": "الإجمالي شامل الضريبة",
   "invoices.vat": "الضريبة",
   "invoices.netAmount": "الصافي",
-  "invoices.bagIncluded": "شاملة الحقيبة"
+  "invoices.bagIncluded": "شاملة الحقيبة",
+
+  "purchases.title": "المشتريات",
+  "purchases.invoiceNo": "رقم فاتورة المورد",
+  "purchases.supplier": "المورد",
+  "purchases.subtotal": "الصافي (بدون ضريبة)",
+  "purchases.tax": "الضريبة",
+  "purchases.total": "الإجمالي",
+  "purchases.status.paid": "مدفوعة",
+  "purchases.status.unpaid": "غير مدفوعة"
 }
