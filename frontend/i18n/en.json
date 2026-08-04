@@ -61,5 +61,14 @@
   "invoices.totalInclVat": "Total (incl. VAT)",
   "invoices.vat": "VAT",
   "invoices.netAmount": "Net",
-  "invoices.bagIncluded": "Bag Included"
+  "invoices.bagIncluded": "Bag Included",
+
+  "purchases.title": "Purchases",
+  "purchases.invoiceNo": "Supplier Invoice No.",
+  "purchases.supplier": "Supplier",
+  "purchases.subtotal": "Subtotal (excl. VAT)",
+  "purchases.tax": "VAT",
+  "purchases.total": "Total",
+  "purchases.status.paid": "Paid",
+  "purchases.status.unpaid": "Unpaid"
 }
