@@ -11,6 +11,10 @@ const { listClients } = require('./services/list-clients-service');
 const { listVaultTransactions } = require('./services/list-vault-service');
 const { listInvoices } = require('./services/list-invoices-service');
 const { listPurchases } = require('./services/list-purchases-service');
+const {
+  createCompanyTransfer, allocateClientsToTransfer, syncClientsFromTransfer,
+  listCompanyTransfers, getCompanyTransfer,
+} = require('./services/company-transfers-service');
 
 const app = express();
 app.use(express.json());
@@ -157,6 +161,51 @@ app.post('/api/manual-sales/:id/post', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM manual_sales_invoices WHERE id = $1', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'الفاتورة غير موجودة' });
     res.json(await postManualSale(rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/company-transfers', async (req, res) => {
+  try {
+    res.status(201).json(await createCompanyTransfer(req.body));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/company-transfers', async (req, res) => {
+  try {
+    res.json(await listCompanyTransfers({
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/company-transfers/:id', async (req, res) => {
+  try {
+    const transfer = await getCompanyTransfer(req.params.id);
+    if (!transfer) return res.status(404).json({ error: 'الحوالة غير موجودة' });
+    res.json(transfer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/company-transfers/:id/allocate-clients', async (req, res) => {
+  try {
+    res.json(await allocateClientsToTransfer(req.params.id, req.body.allocations || []));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/company-transfers/:id/resync', async (req, res) => {
+  try {
+    res.json(await syncClientsFromTransfer(req.params.id));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
