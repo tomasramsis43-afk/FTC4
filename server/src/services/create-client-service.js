@@ -7,15 +7,17 @@ async function createClient(input) {
   const { rows } = await pool.query(
     `INSERT INTO clients
       (client_id, name, phone, nationality, client_type, company_id, credit_days,
-       course_type, course_number, registration_date, expected_course_date,
-       course_price, discount, bag_source, bag_price, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       course_type, course_number, registration_date, expected_course_date, actual_course_date,
+       course_price, discount, paid, paid2, bag_source, bag_price, bag_status, suspended, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
      RETURNING *`,
     [input.client_id || null, input.name, input.phone || null, input.nationality || null,
      input.client_type || 'individual', input.company_id || null, input.credit_days || 0,
      input.course_type || null, input.course_number || null, input.registration_date,
-     input.expected_course_date || null, num(input.course_price), num(input.discount),
-     input.bag_source || null, num(input.bag_price), input.created_by || null]
+     input.expected_course_date || null, input.actual_course_date || null,
+     num(input.course_price), num(input.discount), num(input.paid), num(input.paid2),
+     input.bag_source || null, num(input.bag_price), input.bag_status || null,
+     !!input.suspended, input.created_by || null]
   );
   return rows[0];
 }

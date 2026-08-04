@@ -110,16 +110,25 @@ expenseBreakdown(from, to):
 
 ### 7.4 قائمة الدخل الكاملة (أساس الاستحقاق)
 ```
-grossRevenue = مجموع كل revenueBreakdown
-netRevenue   = grossRevenue - salesReturnsTotal
-totalExpenseBase = مجموع كل expenseBreakdown
-dep = مجموع قيود الإهلاك اليدوية (journal type='depreciation') ضمن الفترة
-acc = مجموع قيود المصروف المستحق اليدوية (type='accrued') ضمن الفترة
-rj  = مجموع قيود التسوية الأخرى اليدوية (type='readj') — بالسالب أو الموجب حسب طبيعتها
+grossRevenue = مجموع كل revenueBreakdown                          // إيراد الدورات من جدول العملاء فقط
+otherRevenue = إيرادات مُرحّلة من دفتر اليومية (حسابات revenue)    // مبيعات يدوية + تسويات إيراد
+               ⚠️ يستثني قيود فواتير الدورات (sourceClientId) لأن إيرادها محسوب في grossRevenue
+netRevenue   = grossRevenue + otherRevenue - salesReturnsTotal
 
-totalExpense = totalExpenseBase + dep + acc
-netIncome    = netRevenue - totalExpense + rj
+totalExpenseBase = مجموع كل expenseBreakdown                       // الخزينة التشغيلية
+journalExpense   = مصاريف مُرحّلة من دفتر اليومية (حسابات expense) // مشتريات + إهلاك + مصروف مستحق + تسويات
+               ⚠️ يستثني قيود فواتير الدورات (sourceClientId)
+totalExpense = totalExpenseBase + journalExpense
+netIncome    = netRevenue - totalExpense
+
+// بنود العرض فقط (مش إضافة مالية): depreciation/accrued/adjustments تُستخرج من byKind
+// لتوضيح مكوّنات journalExpense، لكن لا تُضاف منفصلة (مش Double counting)
 ```
+
+> **التوازن مع ميزان المراجعة:** بما أن `journalExpense` و `otherRevenue` يقرآن نفس
+> القيود التي يبني عليها ميزان المراجعة (accounts 4000/4100/5000/5100/5200)،
+> تصبح قائمة الدخل متطابقة مع جانب الإيرادات/المصروفات في ميزان المراجعة
+> (مضافاً إليها إيراد الدورات غير المُرحّلة من جدول العملاء).
 
 ---
 

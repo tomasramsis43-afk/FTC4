@@ -33,10 +33,13 @@ bagCustody = bagCollected - (stockIssued × سعر_الحقيبة_الحالي +
 ```
 totalAssets = cash + bank + network + receivables + bagInventory
               + max(0, fixedAssetsNet) + bagCustodyAsset   // لو bagCustody سالب
+              + manualSalesAR                               // ذمم المبيعات اليدوية المرحّلة (§9.6)
 
 totalLiabilities = max(0,bagCustody) + max(0,loans) + accrued + otherLiab
+                   + accountsPayable + vatPayable           // من دفتر اليومية (§9.6)
 
 totalEquity = totalAssets - totalLiabilities
+retainedEarnings = رصيد حساب 3100 الصريح + صافي الدخل المتراكم حتى asOf
 ownerCapital = totalEquity - retainedEarnings   // رأس المال = حقوق الملكية − الأرباح المرحّلة
 ```
 
@@ -54,6 +57,20 @@ loansPayableAsOf(asOf):
   = (مجموع الوارد "in") - (مجموع الصادر "out")
 ```
 > **ملاحظة تصميم مهمة لـ FTC4**: القروض حالياً بتتحدد بالنص (regex على كلمة "قرض") مش بحقل مخصص. في إعادة البناء، الأفضل يبقى فيه `type: 'loan'` صريح بدل الاعتماد على تحليل النص — أدق وأسهل صيانة.
+
+### 9.6 البنود المُرحّلة من دفتر اليومية (توازن الميزانية مع ميزان المراجعة)
+```
+manualSalesAR  = رصيد حساب 1100 (ذمم عملاء) من قيود المصدر sourceManualSaleId فقط حتى asOf
+                 // ذمم الدورات محسوبة أصلاً في §9.4 من جدول العملاء — القيود دي هنا لتفادي الخصم المزدوج
+accountsPayable = رصيد حساب 2000 (ذمم موردين) من قيود المصدر sourcePurchaseId حتى asOf
+vatPayable      = رصيد حساب 2100 (ضريبة مستحقة) صافي كل القيود حتى asOf
+retainedEarnings = رصيد 3100 الصريح + صافي دخل قائمة الدخل (من بداية النشاط حتى asOf)
+```
+
+> **التوازن مع ميزان المراجعة:** بإضافة بنود §9.6، تصبح الميزانية العمومية تطابق
+> أرصدة حسابات الميزانية (1100/2000/2100) في ميزان المراجعة، والأرباح المرحّلة
+> تمثّل صافي الدخل المتراكم — فتنطبق `الأصول = الخصوم + حقوق الملكية` على نفس
+> القيود التي يبني عليها ميزان المراجعة.
 
 ---
 

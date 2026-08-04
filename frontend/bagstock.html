@@ -48,6 +48,20 @@
   .badge.issue{background:var(--primary-bg);color:var(--primary);}
   .badge.pending{background:var(--warning-bg);color:var(--warning);}
   .loading, .empty{padding:40px;text-align:center;color:var(--text-dim);}
+  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .notice{display:none;padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+  .notice.show{display:block;}
+  .notice.error{background:var(--danger-bg);color:var(--danger);}
+  .notice.ok{background:var(--success-bg);color:var(--success);}
+  .form-panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;max-width:720px;}
+  .form-panel.show{display:block;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);}
+  .hint{font-size:11px;color:var(--text-dim);margin:-6px 0 12px;}
 </style>
 </head>
 <body>
@@ -63,6 +77,7 @@
     <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
     <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
     <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
+    <a class="sb-item" href="/settings.html" data-i18n="nav.settings">الإعدادات</a>
   </div>
 
   <div class="main">
@@ -74,7 +89,35 @@
       </div>
     </div>
     <div class="content">
-      <div class="page-title" data-i18n="bagstock.title">مخزون الحقائب</div>
+      <div class="page-head">
+        <div class="page-title" data-i18n="bagstock.title">مخزون الحقائب</div>
+        <button class="btn primary" id="new-entry-btn" data-i18n="bagstock.new">سجل جديد</button>
+      </div>
+
+      <div class="notice" id="notice"></div>
+
+      <div class="form-panel" id="form-panel">
+        <div class="form-row">
+          <div class="field"><label data-i18n="bagstock.entryType">النوع</label>
+            <select id="f-type">
+              <option value="deposit">deposit</option>
+              <option value="withdraw">withdraw</option>
+              <option value="issue">issue</option>
+            </select>
+          </div>
+          <div class="field"><label data-i18n="vault.date">التاريخ</label><input type="date" id="f-date"></div>
+          <div class="field"><label data-i18n="bagstock.amount">المبلغ (إيداع/سحب)</label><input id="f-amount" type="number" step="0.01" min="0"></div>
+          <div class="field"><label data-i18n="bagstock.manualQty">كمية يدوية (من فاتورة شراء)</label><input id="f-manual-qty" type="number" step="0.01" min="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="field" id="f-client-wrap" style="display:none"><label data-i18n="bagstock.client">العميل (تسليم)</label><select id="f-client"></select></div>
+          <div class="field"><label data-i18n="bagstock.status">الحالة</label>
+            <select id="f-status"><option value="approved">approved</option><option value="pending">pending</option></select>
+          </div>
+        </div>
+        <button class="btn primary" id="save-entry-btn" data-i18n="actions.save">حفظ</button>
+        <button class="btn" id="cancel-entry-btn" data-i18n="actions.cancel">إلغاء</button>
+      </div>
 
       <div class="summary-strip">
         <div class="summary-card">
@@ -171,6 +214,65 @@ document.getElementById('lang-toggle').addEventListener('click', async (e)=>{
   currentLang = lang;
   localStorage.setItem('ftc4_lang', lang);
   await loadI18n(lang); applyI18n(); loadLedger();
+});
+
+// ============ سجل مخزون جديد ============
+function showNotice(msg, ok) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.className = 'notice show ' + (ok ? 'ok' : 'error');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+async function loadClientOptions() {
+  const res = await ftc4Fetch('/api/clients?pageSize=200');
+  if (!res) return;
+  const { data } = await res.json();
+  document.getElementById('f-client').innerHTML = `<option value="">—</option>` +
+    data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+document.getElementById('f-type').addEventListener('change', (e) => {
+  document.getElementById('f-client-wrap').style.display = e.target.value === 'issue' ? '' : 'none';
+});
+
+document.getElementById('new-entry-btn').addEventListener('click', async () => {
+  if (!document.getElementById('f-client').options.length) await loadClientOptions();
+  document.getElementById('form-panel').classList.add('show');
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-manual-qty').value = '';
+  document.getElementById('f-client-wrap').style.display = 'none';
+  document.getElementById('form-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('cancel-entry-btn').addEventListener('click', () => document.getElementById('form-panel').classList.remove('show'));
+
+document.getElementById('save-entry-btn').addEventListener('click', async () => {
+  const val = id => document.getElementById(id).value;
+  const entryType = val('f-type');
+  const entryDate = val('f-date');
+  if (!entryDate) { showNotice(i18n['bagstock.dateRequired'] || 'التاريخ مطلوب', false); return; }
+
+  const body = {
+    entry_type: entryType,
+    entry_date: entryDate,
+    amount: val('f-amount') || null,
+    manual_qty: val('f-manual-qty') || null,
+    client_id: entryType === 'issue' ? (val('f-client') || null) : null,
+    status: val('f-status'),
+  };
+
+  try {
+    const res = await ftc4Fetch('/api/bagstock', { method: 'POST', body: JSON.stringify(body) });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'فشل الحفظ');
+    document.getElementById('form-panel').classList.remove('show');
+    showNotice(i18n['bagstock.saved'] || 'تم تسجيل السجل', true);
+    loadLedger();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
 });
 
 (async function init(){ await loadI18n(currentLang); applyI18n(); await loadLedger(); })();

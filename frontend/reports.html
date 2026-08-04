@@ -77,6 +77,7 @@
     <a class="sb-item active" href="/reports.html" data-i18n="nav.reports">التقارير</a>
     <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
     <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
+    <a class="sb-item" href="/settings.html" data-i18n="nav.settings">الإعدادات</a>
   </div>
 
   <div class="main">
@@ -244,7 +245,8 @@ function renderIncome(d) {
       <table>
         <tbody>
           <tr><td>${t('reports.grossRevenue')}</td>${money(d.grossRevenue)}</tr>
-          <tr><td>${t('reports.salesReturns')}</td>${money(-d.salesReturns)}</tr>
+          <tr><td>${t('reports.salesReturns')}</td>${money(-(d.salesReturnsTotal || 0))}</tr>
+          <tr><td>${t('reports.otherRevenue')}</td>${money(d.otherRevenue)}</tr>
           <tr><td>${t('reports.depreciation')}</td>${money(d.depreciation)}</tr>
           <tr><td>${t('reports.accrued')}</td>${money(d.accrued)}</tr>
           <tr><td>${t('reports.adjustments')}</td>${money(d.adjustments)}</tr>
@@ -259,6 +261,7 @@ function renderBalanceSheet(d) {
   const rows = [
     ['reports.cash', d.cash], ['reports.bank', d.bank], ['reports.network', d.network],
     ['reports.receivables', d.receivables], ['reports.bagInventory', d.bagInventory],
+    ['reports.manualSalesAR', d.manualSalesAR],
     ['reports.fixedAssets', d.fixedAssetsNet], ['reports.bagCustody', d.bagCustodyAsset],
   ];
   const assetRows = rows.filter(r => r[1] !== 0 || r[0] === 'reports.receivables' || r[0] === 'reports.cash')
@@ -266,6 +269,7 @@ function renderBalanceSheet(d) {
 
   const liabRows = [
     ['reports.bagCustody', d.bagCustodyLiability], ['reports.loans', d.loans],
+    ['reports.accountsPayable', d.accountsPayable], ['reports.vatPayable', d.vatPayable],
     ['reports.accruedLiability', d.accrued], ['reports.otherLiab', d.otherLiab],
   ].filter(r => r[1] !== 0).map(([k, v]) => `<tr><td>${t(k)}</td>${money(v)}</tr>`).join('');
 

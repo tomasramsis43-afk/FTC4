@@ -1,6 +1,6 @@
 // يشغّل كل ملفات migrations/*.sql بالترتيب الأبجدي (001_, 002_...)
 // استخدام: DATABASE_URL=... node src/migrate.js
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
 const path = require('path');
 const { pool } = require('./db');

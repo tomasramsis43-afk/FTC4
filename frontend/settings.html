@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FTC4 — Manual Sales</title>
+<title>FTC4 — Settings</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -33,33 +33,22 @@
   .btn-logout:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
 
   .content{padding:20px 24px;}
-  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .page-title{font-size:16px;font-weight:600;}
-  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
-  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
-  .btn.small{padding:5px 10px;font-size:11.5px;}
+  .page-title{font-size:16px;font-weight:600;margin-bottom:16px;}
   .notice{display:none;padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
   .notice.show{display:block;}
   .notice.error{background:var(--danger-bg);color:var(--danger);}
   .notice.ok{background:var(--success-bg);color:var(--success);}
 
-  .form-panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;max-width:560px;}
-  .form-panel.show{display:block;}
-  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;max-width:760px;}
+  .card-title{font-weight:600;font-size:13px;margin-bottom:14px;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px;}
   .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:600;}
-  .field input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
-  .field input:focus{outline:none;border-color:var(--primary);}
-
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  thead th{text-align:start;font-weight:600;color:var(--text-dim);font-size:11px;padding:9px 14px;border-bottom:1px solid var(--line);background:#f7f8f9;white-space:nowrap;}
-  tbody td{padding:9px 14px;border-bottom:1px solid var(--line);}
-  tbody tr:nth-child(even){background:#fafbfc;}
-  .amount{font-family:'IBM Plex Mono',monospace;direction:ltr;display:block;text-align:end;}
-  .code{font-family:'IBM Plex Mono',monospace;direction:ltr;color:var(--text-dim);}
-  .badge{font-size:10.5px;padding:3px 8px;border-radius:3px;font-weight:600;display:inline-block;background:var(--success-bg);color:var(--success);}
-  .loading,.empty{padding:40px;text-align:center;color:var(--text-dim);}
-  .footer{padding:10px 16px;font-size:11.5px;color:var(--text-dim);}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);}
+  .field input[readonly]{background:#f4f5f7;color:var(--text-dim);}
+  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+  .mono{font-family:'IBM Plex Mono',monospace;direction:ltr;}
 </style>
 </head>
 <body>
@@ -73,17 +62,17 @@
     <a class="sb-item" href="/bagstock.html" data-i18n="bagstock.title">مخزون الحقائب</a>
     <a class="sb-item" href="/invoices.html" data-i18n="invoices.title">سجل الفواتير</a>
     <a class="sb-item" href="/purchases.html" data-i18n="purchases.title">المشتريات</a>
-    <a class="sb-item active" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
+    <a class="sb-item" href="/manual-sales.html" data-i18n="nav.manualSales">المبيعات اليدوية</a>
     <a class="sb-item" href="/company-transfers.html" data-i18n="nav.companyTransfers">حوالات الشركات</a>
     <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
     <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
     <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
-    <a class="sb-item" href="/settings.html" data-i18n="nav.settings">الإعدادات</a>
+    <a class="sb-item active" href="/settings.html" data-i18n="nav.settings">الإعدادات</a>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <div data-i18n="ms.title">المبيعات اليدوية</div>
+      <div data-i18n="settings.title">الإعدادات</div>
       <div class="topbar-left">
         <div class="lang-toggle" id="lang-toggle"><span data-lang="ar">عربي</span><span data-lang="en">EN</span></div>
         <button class="btn-logout" id="logout-btn" data-i18n="auth.logout">تسجيل الخروج</button>
@@ -91,37 +80,41 @@
     </div>
 
     <div class="content">
-      <div class="page-head">
-        <div class="page-title" data-i18n="ms.title">المبيعات اليدوية</div>
-        <button class="btn primary" id="new-sale-btn" data-i18n="ms.new">بيع جديد</button>
-      </div>
-
+      <div class="page-title" data-i18n="settings.title">الإعدادات</div>
       <div class="notice" id="notice"></div>
 
-      <div class="form-panel" id="form-panel">
+      <div class="card">
+        <div class="card-title" data-i18n="settings.center">بيانات المركز</div>
         <div class="form-row">
-          <div class="field"><label data-i18n="ms.customer">العميل/الجهة</label><input id="f-customer"></div>
-          <div class="field"><label data-i18n="ms.date">التاريخ</label><input type="date" id="f-date"></div>
-          <div class="field"><label data-i18n="ms.total">الإجمالي (شامل الضريبة)</label><input id="f-total" type="number" step="0.01" min="0"></div>
+          <div class="field"><label data-i18n="settings.centerName">اسم المركز</label><input id="f-center-name"></div>
+          <div class="field"><label data-i18n="settings.taxNumber">الرقم الضريبي</label><input id="f-tax-number"></div>
+          <div class="field"><label data-i18n="settings.phone">الهاتف</label><input id="f-phone"></div>
+          <div class="field"><label data-i18n="settings.logoUrl">رابط الشعار</label><input id="f-logo-url"></div>
         </div>
-        <button class="btn primary" id="save-sale-btn" data-i18n="actions.save">حفظ</button>
-        <button class="btn" id="cancel-sale-btn" data-i18n="actions.cancel">إلغاء</button>
+        <div class="form-row">
+          <div class="field"><label data-i18n="settings.bagPrice">سعر الحقيبة الحالي</label><input id="f-bag-price" type="number" step="0.01" min="0"></div>
+          <div class="field"><label data-i18n="settings.defaultLang">لغة الواجهة الافتراضية</label>
+            <select id="f-default-lang"><option value="ar">العربية</option><option value="en">English</option></select>
+          </div>
+          <div class="field"><label data-i18n="settings.lockedThrough">قفل الفترات المحاسبية حتى</label><input type="date" id="f-locked-through"></div>
+        </div>
+        <button class="btn primary" id="save-btn" style="display:none" data-i18n="actions.save">حفظ</button>
       </div>
 
       <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th data-i18n="ms.invoiceNo">رقم الفاتورة</th>
-              <th data-i18n="ms.date">التاريخ</th>
-              <th data-i18n="ms.customer">العميل/الجهة</th>
-              <th data-i18n="ms.total">الإجمالي</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="ms-tbody"><tr><td colspan="5" class="loading">...</td></tr></tbody>
-        </table>
-        <div class="footer" id="footer-count"></div>
+        <div class="card-title" data-i18n="settings.counters">عدادات الترقيم (قراءة فقط)</div>
+        <div class="form-row">
+          <div class="field"><label data-i18n="settings.nextInvoiceNo">الفاتورة الضريبية التالية</label><input id="c-invoice-no" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextManualSaleNo">الفاتورة اليدوية التالية</label><input id="c-manual-sale-no" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextReturnNo">مرتجع المبيعات التالي</label><input id="c-return-no" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextVoucherNo">السند التالي</label><input id="c-voucher-no" readonly class="mono"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label data-i18n="settings.nextSeqVault">تسلسل الكاش</label><input id="c-seq-vault" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextSeqBank">تسلسل البنك</label><input id="c-seq-bank" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextSeqNetwork">تسلسل الشبكة</label><input id="c-seq-network" readonly class="mono"></div>
+          <div class="field"><label data-i18n="settings.nextSeqOther">تسلسل أخرى</label><input id="c-seq-other" readonly class="mono"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -129,6 +122,7 @@
 <script>
 let i18n = {};
 let currentLang = localStorage.getItem('ftc4_lang') || 'ar';
+const currentUser = JSON.parse(localStorage.getItem('ftc4_user') || '{}');
 
 const token = localStorage.getItem('ftc4_token');
 if (!token) location.replace('/login.html');
@@ -148,7 +142,6 @@ function applyI18n() {
   document.getElementById('html-root').setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
   document.querySelectorAll('#lang-toggle span').forEach(s => s.classList.toggle('active', s.dataset.lang === currentLang));
 }
-function fmtNum(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }); }
 
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.removeItem('ftc4_token'); localStorage.removeItem('ftc4_user'); location.replace('/login.html');
@@ -157,7 +150,7 @@ document.getElementById('lang-toggle').addEventListener('click', async (e) => {
   const lang = e.target.dataset.lang;
   if (!lang || lang === currentLang) return;
   currentLang = lang; localStorage.setItem('ftc4_lang', lang);
-  await loadI18n(lang); applyI18n(); loadSales();
+  await loadI18n(lang); applyI18n();
 });
 
 function showNotice(msg, ok) {
@@ -167,63 +160,54 @@ function showNotice(msg, ok) {
   setTimeout(() => el.classList.remove('show'), 4000);
 }
 
-async function loadSales() {
-  const tbody = document.getElementById('ms-tbody');
-  tbody.innerHTML = `<tr><td colspan="5" class="loading">...</td></tr>`;
-  const res = await ftc4Fetch('/api/manual-sales?pageSize=50');
+async function loadSettings() {
+  const res = await ftc4Fetch('/api/settings');
   if (!res) return;
-  const { data, total } = await res.json();
-  if (!data.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">—</td></tr>`; return; }
-  tbody.innerHTML = data.map(s => `
-    <tr>
-      <td class="code">MS-${String(s.invoice_no).padStart(6, '0')}</td>
-      <td>${s.sale_date}</td>
-      <td>${s.customer_name || '—'}</td>
-      <td class="amount">${fmtNum(s.total)}</td>
-      <td>${s.linked_journal_entry_id ? `<span class="badge">${i18n['purchases.post'] || 'مرحّلة'}</span>` : `<button class="btn small primary" data-post="${s.id}">${i18n['ms.post'] || 'ترحيل للقيود'}</button>`}</td>
-    </tr>
-  `).join('');
-  document.getElementById('footer-count').textContent = `${data.length} / ${total}`;
-  tbody.querySelectorAll('[data-post]').forEach(b => b.addEventListener('click', async () => {
-    const r = await ftc4Fetch(`/api/manual-sales/${b.dataset.post}/post`, { method: 'POST' });
-    if (!r) return;
-    const d = await r.json();
-    if (!r.ok) { showNotice(d.error, false); return; }
-    showNotice(d.posted ? 'تم الترحيل' : d.reason, d.posted);
-    loadSales();
-  }));
+  const s = await res.json();
+  const set = (id, v) => { document.getElementById(id).value = (v === null || v === undefined) ? '' : v; };
+  set('f-center-name', s.center_name);
+  set('f-tax-number', s.center_tax_number);
+  set('f-phone', s.center_phone);
+  set('f-logo-url', s.center_logo_url);
+  set('f-bag-price', s.bag_price);
+  set('f-default-lang', s.default_ui_language || 'ar');
+  set('f-locked-through', s.vault_locked_through);
+  set('c-invoice-no', s.next_invoice_no);
+  set('c-manual-sale-no', s.next_manual_sales_invoice_no);
+  set('c-return-no', s.next_return_invoice_no);
+  set('c-voucher-no', s.next_voucher_no);
+  set('c-seq-vault', s.next_vault_seq_vault);
+  set('c-seq-bank', s.next_vault_seq_bank);
+  set('c-seq-network', s.next_vault_seq_network);
+  set('c-seq-other', s.next_vault_seq_other);
+
+  if (currentUser.role === 'admin') document.getElementById('save-btn').style.display = '';
 }
 
-document.getElementById('new-sale-btn').addEventListener('click', () => {
-  document.getElementById('form-panel').classList.add('show');
-  document.getElementById('f-customer').value = '';
-  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('f-total').value = '';
-});
-document.getElementById('cancel-sale-btn').addEventListener('click', () => document.getElementById('form-panel').classList.remove('show'));
-
-document.getElementById('save-sale-btn').addEventListener('click', async () => {
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const val = id => document.getElementById(id).value;
+  const body = {
+    center_name: val('f-center-name').trim() || null,
+    center_tax_number: val('f-tax-number').trim() || null,
+    center_phone: val('f-phone').trim() || null,
+    center_logo_url: val('f-logo-url').trim() || null,
+    bag_price: val('f-bag-price'),
+    default_ui_language: val('f-default-lang'),
+    vault_locked_through: val('f-locked-through') || null,
+  };
   try {
-    const res = await ftc4Fetch('/api/manual-sales', {
-      method: 'POST',
-      body: JSON.stringify({
-        customerName: document.getElementById('f-customer').value.trim() || null,
-        saleDate: document.getElementById('f-date').value,
-        total: document.getElementById('f-total').value,
-      }),
-    });
+    const res = await ftc4Fetch('/api/settings', { method: 'PUT', body: JSON.stringify(body) });
     if (!res) return;
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    document.getElementById('form-panel').classList.remove('show');
-    showNotice('تم تسجيل البيع', true);
-    loadSales();
+    if (!res.ok) throw new Error(data.error || 'فشل الحفظ');
+    showNotice(i18n['settings.saved'] || 'تم الحفظ', true);
+    loadSettings();
   } catch (err) {
     showNotice(err.message, false);
   }
 });
 
-(async function init() { await loadI18n(currentLang); applyI18n(); loadSales(); })();
+(async function init() { await loadI18n(currentLang); applyI18n(); await loadSettings(); })();
 </script>
 </body>
 </html>

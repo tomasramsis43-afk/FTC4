@@ -49,6 +49,22 @@
   .footer{padding:10px 16px;font-size:11.5px;color:var(--text-dim);}
   .btn-delete{font-family:inherit;font-size:12px;border-radius:4px;padding:4px 9px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--danger);}
   .btn-delete:hover{background:var(--danger-bg);border-color:var(--danger);}
+  .btn{font-family:inherit;font-size:12px;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .notice{display:none;padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+  .notice.show{display:block;}
+  .notice.error{background:var(--danger-bg);color:var(--danger);}
+  .notice.ok{background:var(--success-bg);color:var(--success);}
+  .form-panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px;}
+  .form-panel.show{display:block;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12.5px;color:var(--text);background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);}
+  .field.check{display:flex;align-items:center;gap:8px;padding-top:22px;}
+  .field.check input{width:auto;}
+  .field.check label{margin:0;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -64,6 +80,7 @@
     <a class="sb-item" href="/reports.html" data-i18n="nav.reports">التقارير</a>
     <a class="sb-item" href="/ledger.html" data-i18n="nav.ledger">الحسابات والقيود</a>
     <a class="sb-item" href="/users.html" data-i18n="nav.users">المستخدمون</a>
+    <a class="sb-item" href="/settings.html" data-i18n="nav.settings">الإعدادات</a>
   </div>
 
   <div class="main">
@@ -75,7 +92,50 @@
       </div>
     </div>
     <div class="content">
-      <div class="page-title" data-i18n="vault.title">الخزينة</div>
+      <div class="page-head">
+        <div class="page-title" data-i18n="vault.title">الخزينة</div>
+        <button class="btn primary" id="new-tx-btn" data-i18n="vault.new">حركة جديدة</button>
+      </div>
+
+      <div class="notice" id="notice"></div>
+
+      <div class="form-panel" id="form-panel">
+        <div class="form-row">
+          <div class="field"><label data-i18n="vault.destination">الوجهة</label>
+            <select id="f-dest">
+              <option value="vault">vault</option><option value="bank">bank</option>
+              <option value="network">network</option><option value="other">other</option>
+            </select>
+          </div>
+          <div class="field"><label data-i18n="vault.type">النوع</label>
+            <select id="f-type"><option value="in">in</option><option value="out">out</option></select>
+          </div>
+          <div class="field"><label data-i18n="vault.amount">المبلغ</label><input id="f-amount" type="number" step="0.01" min="0"></div>
+          <div class="field"><label data-i18n="vault.date">التاريخ</label><input type="date" id="f-date"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label data-i18n="vault.category">التصنيف</label><input id="f-category"></div>
+          <div class="field"><label data-i18n="vault.kind">نوع الحركة</label>
+            <select id="f-kind">
+              <option value="">operational</option>
+              <option value="operational">operational</option>
+              <option value="loan_in">loan_in</option>
+              <option value="loan_out">loan_out</option>
+              <option value="partner_drawing">partner_drawing</option>
+              <option value="capital">capital</option>
+              <option value="fixed_asset">fixed_asset</option>
+            </select>
+          </div>
+          <div class="field"><label data-i18n="vault.client">العميل (اختياري)</label><select id="f-client"></select></div>
+          <div class="field"><label data-i18n="vault.notes">ملاحظات</label><input id="f-notes"></div>
+        </div>
+        <div class="form-row">
+          <div class="field check"><input type="checkbox" id="f-return"><label data-i18n="vault.isReturn">مردود مبيعات</label></div>
+          <div class="field check"><input type="checkbox" id="f-settled" checked><label data-i18n="vault.settled">مُسوّاة (معتمدة)</label></div>
+        </div>
+        <button class="btn primary" id="save-tx-btn" data-i18n="actions.save">حفظ</button>
+        <button class="btn" id="cancel-tx-btn" data-i18n="actions.cancel">إلغاء</button>
+      </div>
 
       <div class="balance-strip" id="balance-strip"></div>
 
@@ -184,6 +244,65 @@ document.getElementById('lang-toggle').addEventListener('click', async (e)=>{
   currentLang = lang;
   localStorage.setItem('ftc4_lang', lang);
   await loadI18n(lang); applyI18n(); loadVault();
+});
+
+// ============ حركة خزينة جديدة ============
+function showNotice(msg, ok) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.className = 'notice show ' + (ok ? 'ok' : 'error');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+async function loadClientOptions() {
+  const res = await ftc4Fetch('/api/clients?pageSize=200');
+  if (!res) return;
+  const { data } = await res.json();
+  document.getElementById('f-client').innerHTML = `<option value="">—</option>` +
+    data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+document.getElementById('new-tx-btn').addEventListener('click', () => {
+  document.getElementById('form-panel').classList.add('show');
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-return').checked = false;
+  document.getElementById('f-settled').checked = true;
+  document.getElementById('form-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('cancel-tx-btn').addEventListener('click', () => document.getElementById('form-panel').classList.remove('show'));
+
+document.getElementById('save-tx-btn').addEventListener('click', async () => {
+  const val = id => document.getElementById(id).value;
+  const amount = parseFloat(val('f-amount')) || 0;
+  const txDate = val('f-date');
+  if (amount <= 0) { showNotice(i18n['vault.amountRequired'] || 'المبلغ مطلوب', false); return; }
+  if (!txDate) { showNotice(i18n['vault.dateRequired'] || 'التاريخ مطلوب', false); return; }
+
+  const body = {
+    destination: val('f-dest'),
+    tx_type: val('f-type'),
+    amount,
+    tx_date: txDate,
+    category: val('f-category').trim() || null,
+    transaction_kind: val('f-kind') || null,
+    client_id: val('f-client') || null,
+    is_return: document.getElementById('f-return').checked,
+    settled: document.getElementById('f-settled').checked,
+    notes: val('f-notes').trim() || null,
+  };
+
+  try {
+    const res = await ftc4Fetch('/api/vault-transactions', { method: 'POST', body: JSON.stringify(body) });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'فشل الحفظ');
+    document.getElementById('form-panel').classList.remove('show');
+    showNotice(i18n['vault.saved'] || 'تم تسجيل الحركة', true);
+    loadVault();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
 });
 
 (async function init(){ await loadI18n(currentLang); applyI18n(); await loadVault(); })();

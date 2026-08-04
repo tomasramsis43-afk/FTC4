@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const express = require('express');
 const path = require('path');
 const { pool, withTransaction } = require('./db');
@@ -26,6 +26,7 @@ const {
 const { listAccounts, listJournalEntries, createManualEntry } = require('./services/ledger-service');
 const { listSuppliers, createPurchase } = require('./services/purchases-write-service');
 const { listManualSales, createManualSale } = require('./services/manual-sales-service');
+const { getSettings, updateSettings } = require('./services/settings-service');
 
 const app = express();
 app.use(express.json());
@@ -447,6 +448,23 @@ app.post('/api/company-transfers/:id/allocate-clients', async (req, res) => {
 app.post('/api/company-transfers/:id/resync', async (req, res) => {
   try {
     res.json(await syncClientsFromTransfer(req.params.id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ الإعدادات ============
+app.get('/api/settings', async (req, res) => {
+  try {
+    res.json(await getSettings());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/settings', requireAdmin, async (req, res) => {
+  try {
+    res.json(await updateSettings(req.body));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

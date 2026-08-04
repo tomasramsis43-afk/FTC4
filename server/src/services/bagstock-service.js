@@ -37,12 +37,19 @@ function recalcBagFundLedger(entries, bagPrice) {
     }
 
     if (entry.entry_type === 'withdraw') {
-      const totalValue = bags * price + balance - num(entry.amount);
-      const newBags = Math.floor(totalValue / price);
-      entry.qty = newBags - bags;
-      entry.unit_price = price;
-      bags = newBags;
-      balance = totalValue - newBags * price;
+      // سعر صفر (مركز لسه مظبطش السعر): تحويل لأمانة بكمية مش ممكن — يتحول سحب نقدي فقط
+      if (price <= 0) {
+        entry.qty = 0;
+        entry.unit_price = 0;
+        balance -= num(entry.amount);
+      } else {
+        const totalValue = bags * price + balance - num(entry.amount);
+        const newBags = Math.floor(totalValue / price);
+        entry.qty = newBags - bags;
+        entry.unit_price = price;
+        bags = newBags;
+        balance = totalValue - newBags * price;
+      }
     } else if (entry.entry_type === 'issue') {
       entry.qty = -1;
       entry.unit_price = 0;
@@ -51,9 +58,9 @@ function recalcBagFundLedger(entries, bagPrice) {
       out.push(entry);
       continue;
     } else {
-      // إيداع عادي (deposit)
+      // إيداع عادي (deposit) — سعر صفر: المبلغ يرحّل كرصيد نقدي بدون تحويل لكمية
       const combined = balance + num(entry.amount);
-      const addedBags = Math.floor(combined / price);
+      const addedBags = price > 0 ? Math.floor(combined / price) : 0;
       entry.qty = addedBags;
       entry.unit_price = price;
       bags += addedBags;

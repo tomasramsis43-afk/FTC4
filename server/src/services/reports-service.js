@@ -57,6 +57,36 @@ function incomeImpact(rows) {
   return total;
 }
 
+// أثر دفتر اليومية كاملاً على قائمة الدخل (إيرادات ومصروفات مُرحّلة) — LOGIC-2 §7.4
+// يستثني قيود فواتير الدورات (source_client_id) لأن إيرادها محسوب أصلاً من جدول العملاء.
+// يشمل: المبيعات اليدوية + المشتريات + الإهلاك + المصروف المستحق + التسويات + أي قيد يدوي.
+async function journalPnl(from, to) {
+  const { rows } = await pool.query(
+    `SELECT je.entry_kind, a.account_type,
+            COALESCE(SUM(jl.debit),0) AS debit, COALESCE(SUM(jl.credit),0) AS credit
+     FROM journal_entries je
+     JOIN journal_lines jl ON jl.entry_id = je.id
+     JOIN chart_of_accounts a ON a.id = jl.account_id
+     WHERE je.entry_date BETWEEN $1 AND $2
+       AND je.source_client_id IS NULL
+       AND a.account_type IN ('revenue','expense')
+     GROUP BY je.entry_kind, a.account_type`,
+    [from, to]
+  );
+
+  let otherRevenue = 0;
+  let journalExpense = 0;
+  const byKind = {};
+  for (const r of rows) {
+    const kind = r.entry_kind || 'manual';
+    (byKind[kind] = byKind[kind] || []).push(r);
+    if (r.account_type === 'revenue') otherRevenue += num(r.credit) - num(r.debit);
+    else if (r.account_type === 'expense') journalExpense += num(r.debit) - num(r.credit);
+  }
+
+  return { otherRevenue, journalExpense, byKind };
+}
+
 // ==================== قائمة الدخل (LOGIC-2 §7) ====================
 
 async function incomeStatement({ from, to }) {
@@ -97,38 +127,29 @@ async function incomeStatement({ from, to }) {
   );
   const expenseBreakdown = expenseRows.map(r => ({ category: r.category, total: num(r.total) }));
 
-  // §7.4 — قيود يدوية: إهلاك + مصروف مستحق + تسويات
-  const { rows: manualRows } = await pool.query(
-    `SELECT je.entry_kind, a.account_type,
-            COALESCE(SUM(jl.debit),0) AS debit, COALESCE(SUM(jl.credit),0) AS credit
-     FROM journal_entries je
-     JOIN journal_lines jl ON jl.entry_id = je.id
-     JOIN chart_of_accounts a ON a.id = jl.account_id
-     WHERE je.entry_date BETWEEN $1 AND $2
-       AND je.entry_kind IN ('depreciation','accrued','adjustment')
-     GROUP BY je.entry_kind, a.account_type`,
-    [from, to]
-  );
-  const byKind = {};
-  manualRows.forEach(r => { (byKind[r.entry_kind] = byKind[r.entry_kind] || []).push(r); });
+  // §7.4 — أثر دفتر اليومية كاملاً على قائمة الدخل (إيرادات ومصروفات مُرحّلة)
+  // يستثني قيود فواتير الدورات (source_client_id) — إيرادها محسوب أصلاً في §7.1 من جدول العملاء
+  const { otherRevenue, journalExpense, byKind } = await journalPnl(from, to);
   const dep = incomeImpact(byKind.depreciation || []);
   const acc = incomeImpact(byKind.accrued || []);
   const rj = incomeImpact(byKind.adjustment || []);
 
   const grossRevenue = Object.values(revenueBreakdown).reduce((s, v) => s + v, 0);
-  const netRevenue = grossRevenue - salesReturnsTotal;
+  const netRevenue = grossRevenue + otherRevenue - salesReturnsTotal;
   const totalExpenseBase = expenseBreakdown.reduce((s, e) => s + e.total, 0);
-  const totalExpense = totalExpenseBase + dep + acc;
-  const netIncome = netRevenue - totalExpense + rj;
+  const totalExpense = totalExpenseBase + journalExpense;
+  const netIncome = netRevenue - totalExpense;
 
   return {
     from, to,
     revenueBreakdown,
     grossRevenue,
+    otherRevenue,
     salesReturnsTotal,
     netRevenue,
     expenseBreakdown,
     totalExpenseBase,
+    journalExpense,
     depreciation: dep,
     accrued: acc,
     adjustments: rj,
@@ -151,6 +172,40 @@ async function balanceSheet({ asOf }) {
   );
   const faMap = Object.fromEntries(faRows.map(r => [r.code, num(r.debit) - num(r.credit)]));
   const fixedAssetsNet = (faMap['1500'] || 0) + (faMap['1590'] || 0);
+
+  // §9.6 — ذمم المبيعات اليدوية المرحّلة حتى asOf (1100 من قيود source_manual_sale_id فقط،
+  // لأن ذمم الدورات محسوبة أصلاً من جدول العملاء في §9.4)
+  const { rows: msArRows } = await pool.query(
+    `SELECT COALESCE(SUM(jl.debit),0) - COALESCE(SUM(jl.credit),0) AS balance
+     FROM journal_lines jl
+     JOIN journal_entries je ON je.id = jl.entry_id
+     JOIN chart_of_accounts a ON a.id = jl.account_id
+     WHERE je.entry_date <= $1 AND je.source_manual_sale_id IS NOT NULL AND a.code = '1100'`,
+    [asOf]
+  );
+  const manualSalesAR = Math.max(0, num(msArRows[0].balance));
+
+  // §9.6 — دائن المشتريات المرحّلة حتى asOf (2000 من قيود source_purchase_id)
+  const { rows: apRows } = await pool.query(
+    `SELECT COALESCE(SUM(jl.credit),0) - COALESCE(SUM(jl.debit),0) AS balance
+     FROM journal_lines jl
+     JOIN journal_entries je ON je.id = jl.entry_id
+     JOIN chart_of_accounts a ON a.id = jl.account_id
+     WHERE je.entry_date <= $1 AND je.source_purchase_id IS NOT NULL AND a.code = '2000'`,
+    [asOf]
+  );
+  const accountsPayable = Math.max(0, num(apRows[0].balance));
+
+  // §9.6 — ضريبة القيمة المضافة المستحقة حتى asOf (2100 صافي كل القيود المرحّلة)
+  const { rows: vatRows } = await pool.query(
+    `SELECT COALESCE(SUM(jl.credit),0) - COALESCE(SUM(jl.debit),0) AS balance
+     FROM journal_lines jl
+     JOIN journal_entries je ON je.id = jl.entry_id
+     JOIN chart_of_accounts a ON a.id = jl.account_id
+     WHERE je.entry_date <= $1 AND a.code = '2100'`,
+    [asOf]
+  );
+  const vatPayable = Math.max(0, num(vatRows[0].balance));
 
   // §9.2 — التزام أمانة الحقائب (أهم بند)
   const { rows: bagCustodyRows } = await pool.query(
@@ -207,19 +262,22 @@ async function balanceSheet({ asOf }) {
   const accrued = liabMap.accrued || 0;
   const otherLiab = liabMap.other_liability || 0;
 
-  // الأرباح المرحّلة (رصيد حساب 3100) — رأس المال = حقوق الملكية − الأرباح المرحّلة (§9.3)
+  // الأرباح المرحّلة = صافي الدخل المتراكم حتى asOf + أرصدة حساب 3100 الصريحة (§9.3)
   const { rows: reRows } = await pool.query(
     `SELECT COALESCE(SUM(jl.credit),0) - COALESCE(SUM(jl.debit),0) AS balance
      FROM journal_lines jl JOIN chart_of_accounts a ON a.id = jl.account_id
      WHERE a.code = '3100'`
   );
-  const retainedEarnings = num(reRows[0].balance);
+  const explicitRetained = num(reRows[0].balance);
+  const cumulativeIncome = await incomeStatement({ from: '0001-01-01', to: asOf });
+  const retainedEarnings = explicitRetained + cumulativeIncome.netIncome;
 
   const totalAssets =
     balances.vault + balances.bank + balances.network + receivables + bagInventory
-    + Math.max(0, fixedAssetsNet) + bagCustodyAsset;
+    + Math.max(0, fixedAssetsNet) + bagCustodyAsset + manualSalesAR;
 
-  const totalLiabilities = bagCustodyLiability + Math.max(0, loans) + accrued + otherLiab;
+  const totalLiabilities = bagCustodyLiability + Math.max(0, loans) + accrued + otherLiab
+    + accountsPayable + vatPayable;
 
   const totalEquity = totalAssets - totalLiabilities;
   const ownerCapital = totalEquity - retainedEarnings;
@@ -227,9 +285,9 @@ async function balanceSheet({ asOf }) {
   return {
     asOf,
     cash: balances.vault, bank: balances.bank, network: balances.network,
-    receivables, bagInventory, fixedAssetsNet,
+    receivables, bagInventory, fixedAssetsNet, manualSalesAR,
     bagCustody, bagCustodyLiability, bagCustodyAsset,
-    loans, accrued, otherLiab,
+    loans, accrued, otherLiab, accountsPayable, vatPayable,
     retainedEarnings, ownerCapital,
     totalAssets, totalLiabilities, totalEquity,
   };
