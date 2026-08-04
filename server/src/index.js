@@ -190,7 +190,9 @@ app.get('/api/accounts', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});app.get('/api/journal', async (req, res) => {
+});
+
+app.get('/api/journal', async (req, res) => {
   try {
     res.json(await listJournalEntries({
       page: parseInt(req.query.page) || 1,
