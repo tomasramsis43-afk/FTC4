@@ -3,7 +3,8 @@ const express = require('express');
 const { pool } = require('./db');
 const { clientFinancials } = require('./services/clients-service');
 const { bagFundLedgerFromDb } = require('./services/bagstock-service');
-const { postCourseInvoice } = require('./services/accounting-service');
+const { postCourseInvoice, postPurchase, postManualSale } = require('./services/accounting-service');
+const { listClients } = require('./services/list-clients-service');
 const { createVaultTransaction } = require('./services/vault-service');
 const { createClient } = require('./services/create-client-service');
 const { withTransaction } = require('./db');
@@ -86,6 +87,44 @@ app.post('/api/vault-transactions', async (req, res) => {
   try {
     const tx = await createVaultTransaction(req.body);
     res.status(201).json(tx);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// سجل العملاء (قراءة + فلاتر + أرصدة محسوبة) — أساس شاشة العملاء
+app.get('/api/clients', async (req, res) => {
+  try {
+    const result = await listClients({
+      search: req.query.search,
+      clientType: req.query.type,
+      hasBalance: req.query.hasBalance === 'true',
+      page: parseInt(req.query.page) || 1,
+      pageSize: parseInt(req.query.pageSize) || 20,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ترحيل فاتورة شراء
+app.post('/api/purchases/:id/post', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM purchases WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'الفاتورة غير موجودة' });
+    res.json(await postPurchase(rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ترحيل فاتورة مبيعات يدوية
+app.post('/api/manual-sales/:id/post', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM manual_sales_invoices WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'الفاتورة غير موجودة' });
+    res.json(await postManualSale(rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
