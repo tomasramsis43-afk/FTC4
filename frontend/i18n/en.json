@@ -41,5 +41,15 @@
   "vault.category": "Category",
   "vault.client": "Client",
   "vault.amount": "Amount",
-  "vault.currentBalance": "Current Balance"
+  "vault.currentBalance": "Current Balance",
+
+  "bagstock.title": "Bag Stock",
+  "bagstock.totalBags": "Total Bags",
+  "bagstock.pendingBalance": "Pending Balance (incomplete bag)",
+  "bagstock.entryType.deposit": "Deposit",
+  "bagstock.entryType.withdraw": "Withdraw",
+  "bagstock.entryType.issue": "Issued to Client",
+  "bagstock.qty": "Qty",
+  "bagstock.unitPrice": "Unit Price",
+  "bagstock.status.pending": "Pending Approval"
 }
