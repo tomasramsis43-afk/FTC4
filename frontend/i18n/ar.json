@@ -51,5 +51,15 @@
   "bagstock.entryType.issue": "تسليم لعميل",
   "bagstock.qty": "الكمية",
   "bagstock.unitPrice": "سعر الوحدة",
-  "bagstock.status.pending": "قيد الاعتماد"
+  "bagstock.status.pending": "قيد الاعتماد",
+
+  "invoices.title": "سجل الفواتير",
+  "invoices.no": "رقم الفاتورة",
+  "invoices.date": "تاريخ الإصدار",
+  "invoices.client": "العميل",
+  "invoices.course": "الدورة",
+  "invoices.totalInclVat": "الإجمالي شامل الضريبة",
+  "invoices.vat": "الضريبة",
+  "invoices.netAmount": "الصافي",
+  "invoices.bagIncluded": "شاملة الحقيبة"
 }
