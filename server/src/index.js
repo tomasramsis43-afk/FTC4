@@ -91,7 +91,7 @@ app.put('/api/users/:id', requireAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/auth/change-password', requireAdmin, async (req, res) => {
+app.post('/api/auth/change-password', async (req, res) => {
   try {
     res.json(await changePassword(req.user.id, req.body));
   } catch (err) {
